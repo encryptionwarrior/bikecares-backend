@@ -10,6 +10,14 @@ const createGroupChatValidator = () => {
     ]
 }
 
+
+const updateGroupChatNameValidator = () => {
+    return [
+        body("name").trim().notEmpty().withMessage("Group name  is required")
+    ]
+}
+
 export {
-    createGroupChatValidator
+    createGroupChatValidator,
+    updateGroupChatNameValidator
 }
