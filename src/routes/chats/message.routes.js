@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { validate } from "../../validators/validate.js";
+import { sendMessageValidator } from "../../validators/chat/message.validation.js";
 import { mongoIdPathVariableValidator } from "../../validators/common/mongodb.validators.js";
 import { verifyJWT } from "../../middlewares/auth.middleware.js";
 import { upload } from "../../middlewares/multer.middlewares.js";
@@ -24,6 +25,7 @@ router
       },
     ]),
     mongoIdPathVariableValidator("chatId"),
+    sendMessageValidator(),
     validate,
     sendMessage
   );

@@ -2,7 +2,11 @@ import multer from "multer";
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb){
+        cb(null, "./public/images")
+    },
+    filename: function (req, file, cb){
         let fileExtension = "";
+        console.log("code run till here, ", file)
         if(file.originalname.split(".").length > 1){
             fileExtension = file.originalname.substring(file.originalname.lastIndexOf("."));
         }
@@ -14,7 +18,7 @@ const storage = multer.diskStorage({
 
 export const upload = multer({ storage,
     limits: {
-        fileSize: 1 * 1000 * 1000,
+        fileSize: 1 * 1000 * 5000,
     }
  });
 

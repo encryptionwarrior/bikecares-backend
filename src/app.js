@@ -36,23 +36,37 @@ const app = express();
 
 const httpServer = createServer(app);
 
+console.log("this is errr", process.env.CORS_ORIGIN);
+
 const io = new Server(httpServer, {
   pingTimeout: 60000,
   cors: {
-    origin: process.env.CORS_ORIGIN,
+    // origin: process.env.CORS_ORIGIN,
+    origin: "http://localhost:3000",
     credentials: true,
   },
 });
 
+app.set("io", io)
+
 app.use(
   cors({
-    origin:
-      process.env.CORS_ORIGIN === "*"
-        ? "*"
-        : process.env.CORS_ORIGIN?.split(","),
+    origin: "http://localhost:3000",
     credentials: true,
   })
 );
+
+// app.use(
+//   cors({
+//     origin:
+//       process.env.CORS_ORIGIN === "*"
+//         ? "*"
+//         : process.env.CORS_ORIGIN?.split(","),
+//     credentials: true,
+//   })
+// );
+
+console.log("this is errr", process.env.CORS_ORIGIN);
 
 app.use(requestIp.mw());
 
@@ -96,14 +110,14 @@ app.use(passport.session());
 
 app.use(morganMiddleware);
 
-import userRouter from "./routes/auth/user.routes.js"
-import messageRouter from "./routes/chats/message.routes.js"
-import chatRouter from "./routes/chats/chat.routes.js"
-app.use("/api/v1/users", userRouter)
-app.use("/api/v1/messages", messageRouter)
-app.use("/api/v1/chats", chatRouter)
+import userRouter from "./routes/auth/user.routes.js";
+import messageRouter from "./routes/chats/message.routes.js";
+import chatRouter from "./routes/chats/chat.routes.js";
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/messages", messageRouter);
+app.use("/api/v1/chats", chatRouter);
 
-initializeSocketIO(io);
+
 
 //
 // app.delete("/api/v1/reset-db", avoid)
@@ -118,6 +132,9 @@ app.use(
     customSiteTite: "Free Api docs",
   })
 );
+
+
+initializeSocketIO(io);
 
 app.use(errorHandler);
 

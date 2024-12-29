@@ -10,6 +10,7 @@ import {
 import { ChatMessage } from "../../models/chat/message.model.js";
 import { emitSocketEvent } from "../../socket/index.js";
 import { ChatEventEnum } from "../../constants.js";
+import { ApiResponse } from "../../utils/ApiResponse.js";
 
 const chatMessageCommonAggregation = () => {
   return [
@@ -87,6 +88,8 @@ const sendMessage = asyncHandler(async (req, res) => {
   }
 
   const messageFiles = [];
+
+ 
 
   if (req.files && req.files.attachments?.length > 0) {
     req.files.attachments?.map((attachment) => {

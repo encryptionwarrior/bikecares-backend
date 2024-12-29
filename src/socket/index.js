@@ -1,9 +1,13 @@
 import cookie from "cookie";
 import jwt from "jsonwebtoken";
-import { Server, Socket } from "socket.io";
+
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/auth/user.models.js";
 import { ChatEventEnum } from "../constants.js";
+import { saveCallLog } from "../controllers/chat/callLogs.controllers.js";
+
+const emailToSocketIdMap = new Map();
+const socketIdToEmailMap = new Map();
 
 
 const mountJoinChatEvent = (socket) => {
@@ -25,6 +29,175 @@ const mountParticipantStoppedTypingEvent = (socket) => {
     })
 }
 
+// const mountVideoCallEvents = (socket, io) => {
+//   socket.on("room:join", (data) => {
+//     const { email, room } = data;
+//     emailToSocketIdMap.set(email, socket.id);
+//     socketIdToEmailMap.set(socket.id, email);
+//     io.to(room).emit("user:joined", { email, id: socket.id });
+//     socket.join(room);
+//     io.to(socket.id).emit("room:join", data);
+//   });
+
+//   socket.on("user:call", ({ to, offer }) => {
+//     io.to(to).emit("incomming:call", { from: socket.id, offer });
+//   });
+
+//   socket.on("call:accepted", ({ to, ans }) => {
+//     io.to(to).emit("call:accepted", { from: socket.id, ans });
+//   });
+
+//   socket.on("peer:nego:needed", ({ to, offer }) => {
+//     console.log("peer:nego:needed", offer);
+//     io.to(to).emit("peer:nego:needed", { from: socket.id, offer });
+//   });
+
+//   socket.on("peer:nego:done", ({ to, ans }) => {
+//     console.log("peer:nego:done", ans);
+//     io.to(to).emit("peer:nego:final", { from: socket.id, ans });
+//   });
+// };
+
+const activeCallTimers = new Map(); // To track timers for active calls
+
+// const mountVideoCallEvents = (socket, io) => {
+//   socket.on("user:call", ({ to, offer }) => {
+//     // Emit incoming call
+//     io.to(to).emit("incoming:call", { from: socket.id, offer });
+
+//     // Start a timer to end the call if unanswered
+//     const callTimeout = setTimeout(() => {
+//       io.to(socket.id).emit("call:missed", { to });
+//       io.to(to).emit("call:missed", { from: socket.id });
+
+//       // Optionally save missed call log here
+//       saveCallLog({
+//         from: socket.user.email, // Ensure email is part of `socket.user`
+//         to: socketIdToEmailMap.get(to),
+//         startTime: new Date(),
+//         missed: true,
+//       });
+
+//       // Clear the timer
+//       activeCallTimers.delete(socket.id);
+//     }, 30000); // Timeout duration (30 seconds)
+
+//     activeCallTimers.set(socket.id, callTimeout);
+//   });
+
+//   socket.on("call:accepted", ({ to, ans }) => {
+//     // If the call is accepted, clear the timeout
+//     const callTimeout = activeCallTimers.get(socket.id);
+//     if (callTimeout) {
+//       clearTimeout(callTimeout);
+//       activeCallTimers.delete(socket.id);
+//     }
+
+//     io.to(to).emit("call:accepted", { from: socket.id, ans });
+
+//     // Save accepted call log
+//     saveCallLog({
+//       from: socket.user.email,
+//       to: socketIdToEmailMap.get(to),
+//       startTime: new Date(),
+//       missed: false,
+//     });
+//   });
+
+//   socket.on("call:ended", ({ to }) => {
+//     io.to(to).emit("call:ended", { from: socket.id });
+
+//     // Save call end log
+//     saveCallLog({
+//       from: socket.user.email,
+//       to: socketIdToEmailMap.get(to),
+//       startTime: new Date(), // You might need to adjust based on actual call duration
+//       endTime: new Date(),
+//       missed: false,
+//     });
+//   });
+
+//   socket.on("disconnect", () => {
+//     // Clear any active call timers on disconnect
+//     const callTimeout = activeCallTimers.get(socket.id);
+//     if (callTimeout) {
+//       clearTimeout(callTimeout);
+//       activeCallTimers.delete(socket.id);
+//     }
+//   });
+// };
+
+const mountVideoCallEvents = (socket, io) => {
+  // User initiates a call
+  socket.on("user:call", ({ chatId, offer }) => {
+    // Emit incoming call to other participants in the chat room
+    io.in(chatId).emit("incoming:call", { chatId, offer });
+
+    // Start a timer to end the call if unanswered
+    const callTimeout = setTimeout(() => {
+      io.in(chatId).emit("call:missed", { chatId });
+
+      // Optionally save missed call log here
+      saveCallLog({
+        chatId,
+        from: socket.user._id, // Ensure user ID is available in the socket
+        to: null, // You can populate the "to" field based on participants in the chat
+        startTime: new Date(),
+        missed: true,
+      });
+
+      // Clear the timer
+      activeCallTimers.delete(chatId);
+    }, 30000); // Timeout duration (30 seconds)
+
+    activeCallTimers.set(chatId, callTimeout);
+  });
+
+  // Call accepted
+  socket.on("call:accepted", ({ chatId, ans }) => {
+    // Clear the call timeout
+    const callTimeout = activeCallTimers.get(chatId);
+    if (callTimeout) {
+      clearTimeout(callTimeout);
+      activeCallTimers.delete(chatId);
+    }
+
+    io.in(chatId).emit("call:accepted", { chatId, ans });
+
+    // Save accepted call log
+    saveCallLog({
+      chatId,
+      from: socket.user._id,
+      to: null, // Populate "to" with actual participant IDs if needed
+      startTime: new Date(),
+      missed: false,
+    });
+  });
+
+  // Call ended
+  socket.on("call:ended", ({ chatId }) => {
+    io.in(chatId).emit("call:ended", { chatId });
+
+    // Save call end log
+    saveCallLog({
+      chatId,
+      from: socket.user._id,
+      to: null, // Populate "to" if needed
+      startTime: new Date(),
+      endTime: new Date(),
+      missed: false,
+    });
+  });
+
+  // Clean up on disconnect
+  socket.on("disconnect", () => {
+    // Clear any active call timers associated with this user
+    for (const [chatId, timer] of activeCallTimers.entries()) {
+      clearTimeout(timer);
+      activeCallTimers.delete(chatId);
+    }
+  });
+};
 
 const initializeSocketIO = (io) => {
     return io.on("connection", async (socket) => {
@@ -67,6 +240,8 @@ const initializeSocketIO = (io) => {
         mountJoinChatEvent(socket);
         mountParticipantTypingEvent(socket);
         mountParticipantStoppedTypingEvent(socket);
+
+        mountVideoCallEvents(socket, io);
   
         socket.on(ChatEventEnum.DISCONNECT_EVENT, () => {
           console.log("user has disconnected 🚫. userId: " + socket.user?._id);
@@ -86,7 +261,7 @@ const initializeSocketIO = (io) => {
 
 
 const emitSocketEvent = (req, roomId, event, payload) => {
-    console.log("check ere room Id", roomId)
+  
     req.app.get("io").in(roomId).emit(event, payload);
   };
 
