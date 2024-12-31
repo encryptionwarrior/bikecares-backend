@@ -29,34 +29,34 @@ const mountParticipantStoppedTypingEvent = (socket) => {
     })
 }
 
-// const mountVideoCallEvents = (socket, io) => {
-//   socket.on("room:join", (data) => {
-//     const { email, room } = data;
-//     emailToSocketIdMap.set(email, socket.id);
-//     socketIdToEmailMap.set(socket.id, email);
-//     io.to(room).emit("user:joined", { email, id: socket.id });
-//     socket.join(room);
-//     io.to(socket.id).emit("room:join", data);
-//   });
+const mountVideoCallEvents = (socket, io) => {
+  socket.on("room:join", (data) => {
+    const { email, room } = data;
+    emailToSocketIdMap.set(email, socket.id);
+    socketIdToEmailMap.set(socket.id, email);
+    io.to(room).emit("user:joined", { email, id: socket.id });
+    socket.join(room);
+    io.to(socket.id).emit("room:join", data);
+  });
 
-//   socket.on("user:call", ({ to, offer }) => {
-//     io.to(to).emit("incomming:call", { from: socket.id, offer });
-//   });
+  socket.on("user:call", ({ to, offer }) => {
+    io.to(to).emit("incomming:call", { from: socket.id, offer });
+  });
 
-//   socket.on("call:accepted", ({ to, ans }) => {
-//     io.to(to).emit("call:accepted", { from: socket.id, ans });
-//   });
+  socket.on("call:accepted", ({ to, ans }) => {
+    io.to(to).emit("call:accepted", { from: socket.id, ans });
+  });
 
-//   socket.on("peer:nego:needed", ({ to, offer }) => {
-//     console.log("peer:nego:needed", offer);
-//     io.to(to).emit("peer:nego:needed", { from: socket.id, offer });
-//   });
+  socket.on("peer:nego:needed", ({ to, offer }) => {
+    console.log("peer:nego:needed", offer);
+    io.to(to).emit("peer:nego:needed", { from: socket.id, offer });
+  });
 
-//   socket.on("peer:nego:done", ({ to, ans }) => {
-//     console.log("peer:nego:done", ans);
-//     io.to(to).emit("peer:nego:final", { from: socket.id, ans });
-//   });
-// };
+  socket.on("peer:nego:done", ({ to, ans }) => {
+    console.log("peer:nego:done", ans);
+    io.to(to).emit("peer:nego:final", { from: socket.id, ans });
+  });
+};
 
 const activeCallTimers = new Map(); // To track timers for active calls
 
@@ -127,77 +127,91 @@ const activeCallTimers = new Map(); // To track timers for active calls
 //   });
 // };
 
-const mountVideoCallEvents = (socket, io) => {
-  // User initiates a call
-  socket.on("user:call", ({ chatId, offer }) => {
-    // Emit incoming call to other participants in the chat room
-    io.in(chatId).emit("incoming:call", { chatId, offer });
+// const mountVideoCallEvents = (socket, io) => {
 
-    // Start a timer to end the call if unanswered
-    const callTimeout = setTimeout(() => {
-      io.in(chatId).emit("call:missed", { chatId });
+//   //   socket.on("room:join", (data) => {
+//   //   const { chatId, room } = data;
+//   //   emailToSocketIdMap.set(chatId, socket.id);
+//   //   socketIdToEmailMap.set(socket.id, chatId);
+//   //   io.to(room).emit("user:joined", { chatId, id: socket.id });
+//   //   socket.join(room);
+//   //   io.to(socket.id).emit("room:join", data);
+//   // });
+//   // User initiates a call
+//   socket.on("user:call", ({ chatId, offer }) => {
+   
+//     console.log("check ud user call", chatId)
+//     // Emit incoming call to other participants in the chat room
+//     // io.in(chatId).emit("incoming:call", { chatId, offer });
+//     socket.in(chatId).emit("incoming:call", { chatId, offer });
 
-      // Optionally save missed call log here
-      saveCallLog({
-        chatId,
-        from: socket.user._id, // Ensure user ID is available in the socket
-        to: null, // You can populate the "to" field based on participants in the chat
-        startTime: new Date(),
-        missed: true,
-      });
+//     console.log("check incoming call", chatId, offer)
 
-      // Clear the timer
-      activeCallTimers.delete(chatId);
-    }, 30000); // Timeout duration (30 seconds)
+//     // Start a timer to end the call if unanswered
+//     const callTimeout = setTimeout(() => {
+//       socket.in(chatId).emit("call:missed", { chatId });
 
-    activeCallTimers.set(chatId, callTimeout);
-  });
+//       // Optionally save missed call log here
+//       saveCallLog({
+//         chatId,
+//         from: socket.user._id, // Ensure user ID is available in the socket
+//         to: null, // You can populate the "to" field based on participants in the chat
+//         startTime: new Date(),
+//         missed: true,
+//       });
 
-  // Call accepted
-  socket.on("call:accepted", ({ chatId, ans }) => {
-    // Clear the call timeout
-    const callTimeout = activeCallTimers.get(chatId);
-    if (callTimeout) {
-      clearTimeout(callTimeout);
-      activeCallTimers.delete(chatId);
-    }
+//       // Clear the timer
+//       activeCallTimers.delete(chatId);
+//     }, 30000); // Timeout duration (30 seconds)
 
-    io.in(chatId).emit("call:accepted", { chatId, ans });
+//     activeCallTimers.set(chatId, callTimeout);
+//   });
 
-    // Save accepted call log
-    saveCallLog({
-      chatId,
-      from: socket.user._id,
-      to: null, // Populate "to" with actual participant IDs if needed
-      startTime: new Date(),
-      missed: false,
-    });
-  });
+//   // Call accepted
+//   socket.on("call:accepted", ({ chatId, ans }) => {
+//     // Clear the call timeout
+//     const callTimeout = activeCallTimers.get(chatId);
+//     if (callTimeout) {
+//       clearTimeout(callTimeout);
+//       activeCallTimers.delete(chatId);
+//     }
 
-  // Call ended
-  socket.on("call:ended", ({ chatId }) => {
-    io.in(chatId).emit("call:ended", { chatId });
+//     socket.in(chatId).emit("call:accepted", { chatId, ans });
 
-    // Save call end log
-    saveCallLog({
-      chatId,
-      from: socket.user._id,
-      to: null, // Populate "to" if needed
-      startTime: new Date(),
-      endTime: new Date(),
-      missed: false,
-    });
-  });
+//     // Save accepted call log
+//     saveCallLog({
+//       chatId,
+//       from: socket.user._id,
+//       to: null, // Populate "to" with actual participant IDs if needed
+//       startTime: new Date(),
+//       missed: false,
+//     });
+//   });
 
-  // Clean up on disconnect
-  socket.on("disconnect", () => {
-    // Clear any active call timers associated with this user
-    for (const [chatId, timer] of activeCallTimers.entries()) {
-      clearTimeout(timer);
-      activeCallTimers.delete(chatId);
-    }
-  });
-};
+//   // Call ended
+//   socket.on("call:ended", ({ chatId }) => {
+//     socket.in(chatId).emit("call:ended", { chatId });
+
+//     // Save call end log
+//     saveCallLog({
+//       chatId,
+//       from: socket.user._id,
+//       to: null, // Populate "to" if needed
+//       startTime: new Date(),
+//       endTime: new Date(),
+//       missed: false,
+//     });
+//   });
+
+//   // Clean up on disconnect
+//   socket.on("disconnect", () => {
+//     // Clear any active call timers associated with this user
+//     for (const [chatId, timer] of activeCallTimers.entries()) {
+//       clearTimeout(timer);
+//       activeCallTimers.delete(chatId);
+//     }
+//   });
+// };
 
 const initializeSocketIO = (io) => {
     return io.on("connection", async (socket) => {

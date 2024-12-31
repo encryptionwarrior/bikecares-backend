@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 const CallLogSchema = new mongoose.Schema({
     chatId: { type: String, required: true }, // Reference to the chat room
     from: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Optional, user who initiated the call
