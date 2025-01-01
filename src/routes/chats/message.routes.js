@@ -7,12 +7,15 @@ import { upload } from "../../middlewares/multer.middlewares.js";
 import {
   deleteMessage,
   getAllMessage,
+  makeAudioCall,
   sendMessage,
 } from "../../controllers/chat/message.controllers.js";
 
 const router = Router();
 
 router.use(verifyJWT);
+
+router.route("/incomingcall/:chatId").post(makeAudioCall)
 
 router
   .route("/:chatId")
@@ -30,8 +33,12 @@ router
     sendMessage
   );
 
+ 
+
 router
   .route("/:chatId/:messageId")
   .delete(mongoIdPathVariableValidator("chatId"), validate, deleteMessage);
+
+ 
 
 export default router;

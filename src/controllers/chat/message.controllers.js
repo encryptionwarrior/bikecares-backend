@@ -11,6 +11,7 @@ import { ChatMessage } from "../../models/chat/message.model.js";
 import { emitSocketEvent } from "../../socket/index.js";
 import { ChatEventEnum } from "../../constants.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
+import { saveCallLog } from "./callLogs.controllers.js";
 
 const chatMessageCommonAggregation = () => {
   return [
@@ -152,6 +153,38 @@ const sendMessage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, receivedMessage, "Message saved successfully"));
 });
 
+
+const makeAudioCall = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+  const {offer} = req.body; 
+
+const activeCallTimers = new Map();
+  emitSocketEvent(req, chatId?.toString(), ChatEventEnum?.INCOMING_CALL_EVENT, offer);
+
+  const callTimeout = setTimeout(() => {
+    socket.in(chatId).emit("call:missed", { chatId });
+
+    // Optionally save missed call log here
+    saveCallLog({
+      chatId,
+      from: socket.user._id, // Ensure user ID is available in the socket
+      to: null, // You can populate the "to" field based on participants in the chat
+      startTime: new Date(),
+      missed: true,
+    });
+
+    // Clear the timer
+    activeCallTimers.delete(chatId);
+  }, 30000);
+
+  activeCallTimers.set(chatId, callTimeout);
+
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, "", "Incoming call maked successfully"));
+})
+
 const deleteMessage = asyncHandler(async (req, res) => {
   const { chatId, messageId } = req.params;
 
@@ -219,4 +252,4 @@ const deleteMessage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, message, "Message ddeleted successfully"));
 });
 
-export { sendMessage, getAllMessage, deleteMessage };
+export { sendMessage, getAllMessage, deleteMessage, makeAudioCall };

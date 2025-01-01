@@ -28,6 +28,7 @@ export const ChatEventEnum = Object.freeze({
     STOP_TYPING_EVENT: "stopTyping",
     TYPING_EVENT: "typing",
     MESSAGE_DELETE_EVENT: "messageDeleted",
+    INCOMING_CALL_EVENT: "incoming:call",
 })
 
 export const AvailableSocialLogins = Object.values(UserLoginType);
