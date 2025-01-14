@@ -3,11 +3,10 @@ import jwt from "jsonwebtoken";
 
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/auth/user.models.js";
-import { ChatEventEnum } from "../constants.js";
+import { ChatEventEnum, haversine } from "../constants.js";
 import { saveCallLog } from "../controllers/chat/callLogs.controllers.js";
 
-const emailToSocketIdMap = new Map();
-const socketIdToEmailMap = new Map();
+
 
 const mountJoinChatEvent = (socket) => {
   socket.on(ChatEventEnum.JOIN_CHAT_EVENT, (chatId) => {
@@ -28,7 +27,86 @@ const mountParticipantStoppedTypingEvent = (socket) => {
   });
 };
 
+
+const getLiveETA = (socket, io) => {
+   // Handle service partner location updates
+   socket.on("joinRoom", (data) => {
+    const { userId } = data;
+    socket.join(userId); // Add the socket to the user-specific room
+    console.log(`Socket ${socket.id} joined room ${userId}`);
+  });
+
+   const locations = {};
+
+   socket.on("locationUpdate", (data) => {
+    const { userId, userLat, userLon, partnerId, partnerLat, partnerLon, speed } = data;
+
+  
+
+
+
+    locations[userId] = {lat: userLat, lon: userLon};
+    locations[partnerId] = {lat: partnerLat, lon: partnerLon};
+
+    const distance = haversine(userLat, userLon, partnerLat, partnerLon );
+    const eta = distance/speed;
+    const etaMinutes = Math.ceil(eta * 60);
+
+    // io.to(userId).emit("locationUpdate", {
+    //   userLat,
+    //   userLon,
+    //   partnerLat,
+    //   partnerLon,
+    //   eta: etaMinutes,
+    //   distance: distance.toFixed(2)
+    // })
+
+    // console.log("check here location update", data)
+
+    // io.to(partnerId).emit("locationUpdate", {
+    //   userLat,
+    //   userLon,
+    //   partnerLat,
+    //   partnerLon,
+    //   eta: etaMinutes,
+    //   distance: distance.toFixed(2)
+    // })
+
+     io.emit("locationUpdate", {
+      userLat,
+      userLon,
+      partnerLat,
+      partnerLon,
+      eta: etaMinutes,
+      distance: distance.toFixed(2)
+    })
+
+   })
+
+  //  socket.on("partnerLocation", (data) => {
+  //   const { userLat, userLon, partnerLat, partnerLon, speed } = data;
+
+  //   // Calculate distance and ETA
+  //   const distance = haversine(userLat, userLon, partnerLat, partnerLon);
+  //   const eta = distance / speed; // Hours
+  //   const etaMinutes = Math.ceil(eta * 60); // Minutes
+
+
+   
+
+  //   // Broadcast the location and ETA to the user
+  //   io.emit("locationUpdate", {
+  //     partnerLat,
+  //     partnerLon,
+  //     eta: etaMinutes,
+  //     distance: distance.toFixed(2),
+  //   });
+  // });
+}
+
 const activeCallTimers = new Map();
+const emailToSocketIdMap = new Map();
+const socketIdToEmailMap = new Map();
 
 const mountVideoCallEvents = (socket, io) => {
   socket.on("room:join", (data) => {
@@ -42,7 +120,9 @@ const mountVideoCallEvents = (socket, io) => {
   });
 
   socket.on("user:call", ({ to, offer, email }) => {
-    io.to(to).emit("incomming:call", { from: socket.id, offer, email });
+    let socketId =  emailToSocketIdMap.get(email);
+
+    io.to(to).emit("incomming:call", { from: socket.id, offer, email: email });
   });
 
   socket.on("call:accepted", ({ to, ans, email }) => {
@@ -58,6 +138,11 @@ const mountVideoCallEvents = (socket, io) => {
     // console.log("peer:nego:done", ans);
     io.to(to).emit("peer:nego:final", { from: socket.id, ans });
   });
+
+  socket.on("call:ended", ({ to, ans }) => {
+    io.in(to).emit("call:ended", { ans });
+  });
+
 };
 
 // const mountVideoCallEvents = (socket, io) => {
@@ -182,6 +267,7 @@ const initializeSocketIO = (io) => {
 
       // Common events that needs to be mounted on the initialization
       mountJoinChatEvent(socket);
+      getLiveETA(socket, io);
       mountParticipantTypingEvent(socket);
       mountParticipantStoppedTypingEvent(socket);
 

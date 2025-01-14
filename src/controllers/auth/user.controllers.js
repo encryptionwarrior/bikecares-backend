@@ -121,7 +121,72 @@ const loginUser = asyncHandler(async(req, res) => {
 
 })
 
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    if(!incomingRefreshToken) {
+        throw new ApiError(401, "Unauthorized request");
+    }
+
+    try {
+        const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+        const user = await User.findOne(decodedToken?._id);
+
+        if(!user) {
+            throw new ApiError(404, "Invalid refresh token");
+        }
+
+        if(incomingRefreshToken !== user.refreshToken) {
+            throw new ApiError(401, "Refresh token is expired or used"); 
+        }
+
+        const options = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+        }
+
+        const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshToken(user._id);
+
+        user.refreshToken = newRefreshToken;
+        await user.save();
+
+        return res.status(200).cookie("accessToken", accessToken, options)
+       .cookie("refreshToken", newRefreshToken, options).json(new ApiResponse(200, {accessToken, refreshToken: newRefreshToken},  "Access token refreshed"));
+
+    } catch (error) {
+        throw new ApiError(401, error?.message || "Invalid refresh token");
+    }
+});
+
+const verifyEmail = asyncHandler(async (req, res) => {
+    const { verificationToken } = req.params;
+
+    if(!verificationToken){
+        throw new ApiError(400, "Email Verification token is missing");
+    }
+
+    let hashedToken = crypto.createHashed("sha256").update(verificationToken).digest("hex");
+
+    const user = await User.findOne({emailVerificationExpiry: hashedToken, emailVerificationExpiry: {$gt: Date.now()}});
+
+    if(!user){
+        throw new ApiError(404, "Token is invalid or expired");
+    }
+
+
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpiry = undefined;
+
+    user.isEmailVerified = true; //
+    await user.save({validateBeforeSave: false});
+
+    return res.status(200).json(new ApiResponse(200, {isEmailVerified: true}, "Email verified successfully"));
+})
+
 export {
     regsiterUser,
-    loginUser
+    loginUser,
+    refreshAccessToken,
+    verifyEmail
 }
