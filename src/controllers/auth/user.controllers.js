@@ -55,7 +55,7 @@ const regsiterUser = asyncHandler(async (req, res) => {
     user.emailVerificationExpiry = tokenExpiry;
     user.emailVerificationToken = hashedToken;
     await user.save({ validateBeforeSave: false});
-    console.log("code run till here", email, password)
+    
 
     await sendEmail({
         email: user?.email,

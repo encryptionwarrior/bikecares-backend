@@ -1,12 +1,50 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
+import { AvailableBookingStatus, AvailableServices, bookingStatusEnum, serviceTypeEnum } from "../../constants";
 const bookingSchema = new mongoose.Schema({
-    chatId: { type: String, required: true }, // Reference to the chat room
-    from: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Optional, user who initiated the call
-    to: { type: mongoose.Schema.Types.ObjectId, ref: "User" },   // Optional, callee (if applicable)
-    startTime: { type: Date, required: true },
-    endTime: { type: Date },
-    missed: { type: Boolean, default: false },
-  });
+   user: {
+    type: Schema.Types.ObjectId,
+    ref: "User"
+   },
+   serviceType: {
+    type: String,
+    enum: AvailableServices,
+    required: true
+   },
+   garage: {
+    type: Schema.Types.ObjectId,
+    ref: "Garage"
+   },
+   location: {
+    type: String,
+    required: true
+   },
+   serviceDate: {
+    type: Date,
+    required: true,
+    validate: {
+       validator: function(value) {
+         return value >= new Date();
+       },
+       message: "Service date must be in the future"
+    }
+   },
+   serviceTime: {
+    type: String,
+    required: true
+   },
+   serviceDescription: {
+    type: String,
+   },
+   status: {
+    type: String,
+    enum: AvailableBookingStatus,
+    default: bookingStatusEnum.PENDING,
+    required: true
+   }
+  },
+{
+  timestamps: true,
+});
   
-  export const booking = mongoose.model("CallLog", bookingSchema);
+  export const Booking = mongoose.model("Booking", bookingSchema);
   

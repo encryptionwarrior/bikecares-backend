@@ -61,6 +61,37 @@ const emailVerificationMailgenContent = ( username, verificationUrl ) => {
     }
 }
 
+
+const bookingSuccessMailgenContent = (username, bookingetaurl, bookingdetails) => {
+  return {
+      body: {
+          name: username,
+          intro: `Thank you for booking with us, ${username}! Below are your booking details:`,
+          table: {
+              data: bookingdetails.map((detail) => ({
+                  key: detail.label,
+                  value: detail.value,
+              })),
+              columns: {
+                  customWidth: {
+                      key: '30%',
+                      value: '70%',
+                  },
+              },
+          },
+          action: {
+              instructions: "Track your booking status here:",
+              button: {
+                  color: "#22BC66",
+                  text: "Track your booking",
+                  link: bookingetaurl,
+              },
+          },
+          outro: "Need help, or have questions? Just reply to this email, we're here to assist you.",
+      },
+  };
+};
+
 export {
-    sendEmail, emailVerificationMailgenContent
+    sendEmail, emailVerificationMailgenContent, bookingSuccessMailgenContent
 }

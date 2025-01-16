@@ -35,6 +35,27 @@ export const AvailableSocialLogins = Object.values(UserLoginType);
 
 export const USER_TEMPORARY_TOKEN_EXPIRY = 20 * 60 * 1000;
 
+export const serviceTypeEnum = {
+    OnTheGo: "onTheGo",
+    HomeService: "homeService",
+   InGarage: "inGarage",
+}
+
+
+export const AvailableServices = Object.values(serviceTypeEnum);
+
+export const bookingStatusEnum = {
+    PENDING: "pending",
+    ACCEPTED: "accepted",
+    COMPLETED: "completed",
+    CANCELLED: "cancelled",
+    ONGOING: "ongoing",
+    REJECTED: "rejected",
+    EXPIRED: "expired",
+}
+
+export const AvailableBookingStatus = Object.values(bookingStatusEnum);
+
 // Haversine formula for distance calculation
 export const haversine = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Earth's radius in km
