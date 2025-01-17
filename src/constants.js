@@ -56,6 +56,14 @@ export const bookingStatusEnum = {
 
 export const AvailableBookingStatus = Object.values(bookingStatusEnum);
 
+export const partnerTypeEnum = {
+    MECHANIC: "mechanic",
+    GARAGEOWNER: "garageOwner",
+    MECHANIC_OWNER: "mechanicOwner"
+}
+
+export const AvailablePartnerTypes = Object.values(partnerTypeEnum);
+
 // Haversine formula for distance calculation
 export const haversine = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Earth's radius in km
