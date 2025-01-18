@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { AvailablePartnerTypes, partnerTypeEnum } from "../../constants";
+import { AvailablePartnerTypes, partnerTypeEnum } from "../../constants.js";
 
 const mechanicSchema = new Schema({
   first_name: { type: String, required: true },
@@ -13,10 +13,10 @@ const mechanicSchema = new Schema({
     required: true,
   },
   address: { type: String, required: true},
-  coordinates: {
-    latitude: { type: String, required: true},
-    longitude: { type: String, required: true}
-  },
+  // coordinates: {
+  //   latitude: { type: String, required: true},
+  //   longitude: { type: String, required: true}
+  // },
   adhar_card: {
     type: {
         url: String,
@@ -39,6 +39,7 @@ const mechanicSchema = new Schema({
   },
   verificationOtp: { type: String },
   verificationOtpExpiry: { type: Date },
+  isParterVerified: { type: Boolean, default: false}
 }, {
     timestamps: true,
 });
