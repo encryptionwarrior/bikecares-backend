@@ -114,10 +114,13 @@ import userRouter from "./routes/auth/user.routes.js";
 import messageRouter from "./routes/chats/message.routes.js";
 import chatRouter from "./routes/chats/chat.routes.js";
 import mechanicRouter from "./routes/mechanic/mechanic.routes.js";
+import bookingRouter from "./routes/bookings/booking.routes.js";
+
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/messages", messageRouter);
 app.use("/api/v1/chats", chatRouter);
 app.use("/api/v1/mechanic", mechanicRouter);
+app.use("/api/v1/booking", bookingRouter);
 
 
 

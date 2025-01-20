@@ -1,13 +1,38 @@
-import { serviceTypeEnum } from "../../constants";
-import { Booking } from "../../models/booking/booking.models";
-import { ApiError } from "../../utils/ApiError";
-import { asyncHandler } from "../../utils/asyncHandler";
-import { bookingSuccessMailgenContent, emailVerificationMailgenContent, sendEmail } from "../../utils/mail";
+import { BookingEventEnum, ChatEventEnum, serviceTypeEnum } from "../../constants.js";
+import { Booking } from "../../models/booking/booking.models.js";
+import { Mechanic } from "../../models/mechanic/mechanic.model.js";
+import { emitSocketEvent } from "../../socket/index.js";
+import { ApiError } from "../../utils/ApiError.js";
+import { ApiResponse } from "../../utils/ApiResponse.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
+import { bookingSuccessMailgenContent, emailVerificationMailgenContent, sendEmail } from "../../utils/mail.js";
 
 
-export const createBooking = asyncHandler(async(req, res) => {
+const findNearbyMechanics = async(latitude, longitude, radiusInKm) => {
+    const radiusInMeter = radiusInKm * 1000;
+
+    console.log("FindNearbyMechanic", latitude, longitude, radiusInKm, radiusInMeter);
+
+    const nearbyMechanics = await Mechanic.find({
+        location: {
+            $near: {
+                $geometry: {
+                    type: "Point",
+                    coordinates: [longitude, latitude],
+                },
+                $maxDistance: radiusInMeter,
+            },
+        },
+    });
+
+    console.log("here check nearby mechanics", nearbyMechanics)
+
+    return  nearbyMechanics
+}
+
+ const createBooking = asyncHandler(async(req, res) => {
     // Create booking
-    const { serviceType, location, serviceDate, serviceTime, serviceDescription, garage  } = req.body;
+    const { serviceType, address, serviceDate, serviceTime, serviceDescription, garage, latitude, longitude  } = req.body;
 
     // booking steps:
     // 1. Validate the booking data
@@ -20,11 +45,15 @@ export const createBooking = asyncHandler(async(req, res) => {
 
     const booking = await Booking.create({
         serviceType,
-        location,
+        address,
+        location: {
+            type: "Point",
+            coordinates: [longitude, latitude],
+        },
         serviceDate,
         serviceTime,
         serviceDescription,
-        customer: req.user._id,
+        user: req.user._id,
     })
 
     if(serviceType === serviceTypeEnum.InGarage) {
@@ -53,14 +82,37 @@ export const createBooking = asyncHandler(async(req, res) => {
             ]
         ),
     });
-    // Send booking confirmation email
-    return res.status(201).json(new ApiResponse(200, {user: booking}, "Your booking has been confirmed successfully"))
+    
+    
+    const nearbyPartners = await findNearbyMechanics(latitude, longitude, 10);
+
+    nearbyPartners.forEach((partner) => {
+      // Use the partner's socket ID to emit the booking details
+    //   io.to(partner.socketId).emit("newBooking", {
+    //     message: "New booking in your area!",
+    //     bookingDetails,
+    //   });
+
+    emitSocketEvent(
+        req,
+        // participantObjectId.toString(),
+        partner?.user?.toString(),
+        BookingEventEnum?.BOOKING_REQUEST_EVENT,
+        booking
+      );
+
+    });
+
+    console.log("here is booking info", nearbyPartners)
+
+    return res.status(201).json(new ApiResponse(200, {user: booking, nearbyPartners: nearbyPartners}, "Your booking has been confirmed successfully"))
 });
 
 const getBookings = asyncHandler(async (req, res) => {
+    console.log("her")
     // Fetch bookings for the current user
-    const bookings = await Booking.find({ customer: req.user._id })
-       .populate("garage", "name")
+    const bookings = await Booking.find({ user: req.user._id })
+       .populate("garage", "username")
        .exec();
 
     return res.json(new ApiResponse(200, { bookings }, "Your bookings"));
@@ -72,7 +124,7 @@ const getBookingById = asyncHandler(async (req, res) => {
        .populate("garage", "name")
        .exec();
 
-    return res.json(new ApiResponse(200, { booking }, "Your booking has been fetched successfully"))
+    return res.status(200).json(new ApiResponse(200, { booking }, "Your booking has been fetched successfully"))
 })
 
 const cancelBooking = asyncHandler(async (req, res) => {
@@ -102,4 +154,4 @@ const changeBookingStatus = asyncHandler(async (req, res) => {
        return res.json(new ApiResponse(200, { booking }, "Your booking status has been updated successfully"))
 })
 
-export { createBooking, getBookings, cancelBooking, changeBookingStatus, updateBooking };
+export { createBooking, getBookings, cancelBooking, changeBookingStatus, updateBooking, getBookingById };

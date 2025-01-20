@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { AvailableBookingStatus, AvailableServices, bookingStatusEnum, serviceTypeEnum } from "../../constants";
+import { AvailableBookingStatus, AvailableServices, bookingStatusEnum, serviceTypeEnum } from "../../constants.js";
 const bookingSchema = new mongoose.Schema({
    user: {
     type: Schema.Types.ObjectId,
@@ -14,10 +14,22 @@ const bookingSchema = new mongoose.Schema({
     type: Schema.Types.ObjectId,
     ref: "Garage"
    },
-   location: {
+   address: {
     type: String,
     required: true
    },
+   location: {
+    type: {
+      type: String,
+      enum: ["Point"], // GeoJSON type must be 'Point'
+      required: true,
+      default: "Point",
+    },
+    coordinates: {
+      type: [Number], // Array of [longitude, latitude]
+      required: true,
+    },
+  },
    serviceDate: {
     type: Date,
     required: true,
@@ -45,6 +57,8 @@ const bookingSchema = new mongoose.Schema({
 {
   timestamps: true,
 });
+
+bookingSchema.index({ location: "2dsphere" });
   
   export const Booking = mongoose.model("Booking", bookingSchema);
   

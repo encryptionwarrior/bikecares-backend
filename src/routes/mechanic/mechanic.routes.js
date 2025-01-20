@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { validate } from "../../validators/validate.js";
 import { registerMechanicValidaor } from "../../validators/mechanic/mechanic.validators.js";
-import { registerMechanic } from "../../controllers/mechanic/mechanic.controllers.js";
+import { registerMechanic, verifyMechanicPhone } from "../../controllers/mechanic/mechanic.controllers.js";
 import { upload } from "../../middlewares/multer.middlewares.js";
 import { verifyJWT } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
+
+router.use(verifyJWT);
 
 router.route("/register-mechanic").post(
  upload.fields([
@@ -21,6 +23,6 @@ router.route("/register-mechanic").post(
     registerMechanicValidaor(), validate, 
        registerMechanic);
 
-    router.route("/verify-mechanic").get(verifyJWT, registerMechanicValidaor);
+    router.route("/verify-mechanic").get(verifyJWT, registerMechanicValidaor(), verifyMechanicPhone);
 
 export default router;

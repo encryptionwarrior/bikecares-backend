@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/auth/user.models.js";
-import { ChatEventEnum, haversine } from "../constants.js";
+import { ChatEventEnum, haversineDistance } from "../constants.js";
 import { saveCallLog } from "../controllers/chat/callLogs.controllers.js";
 
 
@@ -48,7 +48,7 @@ const getLiveETA = (socket, io) => {
     locations[userId] = {lat: userLat, lon: userLon};
     locations[partnerId] = {lat: partnerLat, lon: partnerLon};
 
-    const distance = haversine(userLat, userLon, partnerLat, partnerLon );
+    const distance = haversineDistance(userLat, userLon, partnerLat, partnerLon );
     const eta = distance/speed;
     const etaMinutes = Math.ceil(eta * 60);
 
@@ -87,7 +87,7 @@ const getLiveETA = (socket, io) => {
   //   const { userLat, userLon, partnerLat, partnerLon, speed } = data;
 
   //   // Calculate distance and ETA
-  //   const distance = haversine(userLat, userLon, partnerLat, partnerLon);
+  //   const distance = haversineDistance(userLat, userLon, partnerLat, partnerLon);
   //   const eta = distance / speed; // Hours
   //   const etaMinutes = Math.ceil(eta * 60); // Minutes
 

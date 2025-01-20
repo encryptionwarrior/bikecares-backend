@@ -4,8 +4,10 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { getLocalPath, getStaticFilePath } from "../../utils/helpers.js";
 
+
+
 const registerMechanic = asyncHandler(async(req, res) => {
-    const { first_name, last_name, phone_number, experience, partnerType, address, coordinates  } = req.body;
+    const { first_name, last_name, phone_number, experience, partnerType, address, latitude, longitude  } = req.body;
     // take image paths from multer - adhar_card, dl_card
 
     const adharCardUrl = getStaticFilePath(req, req.files?.adhar_card[0]?.filename);
@@ -20,13 +22,17 @@ const registerMechanic = asyncHandler(async(req, res) => {
     // save otp and expiry in database
  
     const mechanic = await Mechanic.create({
+        user: req.user._id,
         first_name,
         last_name,
         phone_number,
         experience,
         partnerType,
         address,
-        coordinates: {latitude: coordinates?.latitude, longitude:coordinates?.latitude },
+        location: {
+            type: "Point",
+            coordinates: [longitude, latitude],
+        },
         adhar_card: {
             url: adharCardUrl,
             localPath: adharCardLocalPath,

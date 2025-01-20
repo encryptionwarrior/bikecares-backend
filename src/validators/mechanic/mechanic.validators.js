@@ -26,10 +26,10 @@ const registerMechanicValidaor = () => {
         body('address')
             .notEmpty()
             .withMessage('Address is required'),
-        body('coordinates.latitude')
+        body('latitude')
             .notEmpty()
             .withMessage('Latitude is required'),
-        body('coordinates.longitude')
+        body('longitude')
             .notEmpty()
             .withMessage('Longitude is required'),
         body('adhar_card')

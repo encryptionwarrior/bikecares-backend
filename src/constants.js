@@ -33,6 +33,18 @@ export const ChatEventEnum = Object.freeze({
 
 export const AvailableSocialLogins = Object.values(UserLoginType);
 
+export const BookingEventEnum = Object.freeze({
+    BOOKING_REQUEST_EVENT: "bookingRequest",
+    BOOKING_ACCEPTED_EVENT: "bookingAccepted",
+    BOOKING_REJECTED_EVENT: "bookingRejected",
+    BOOKING_COMPLETED_EVENT: "bookingCompleted",
+    BOOKING_CANCELLED_EVENT: "bookingCancelled",
+    BOOKING_EXPIRED_EVENT: "bookingExpired",
+    BOOKING_UPDATED_EVENT: "bookingUpdated",
+});
+
+export const AvailableBookingEvents = Object.values(BookingEventEnum);
+
 export const USER_TEMPORARY_TOKEN_EXPIRY = 20 * 60 * 1000;
 
 export const serviceTypeEnum = {
@@ -65,7 +77,7 @@ export const partnerTypeEnum = {
 export const AvailablePartnerTypes = Object.values(partnerTypeEnum);
 
 // Haversine formula for distance calculation
-export const haversine = (lat1, lon1, lat2, lon2) => {
+export const haversineDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Earth's radius in km
     const toRad = (x) => (x * Math.PI) / 180;
   

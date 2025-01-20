@@ -1,13 +1,13 @@
 import { body } from "express-validator";
-import { AvailableServices } from "../../constants";
+import { AvailableServices } from "../../constants.js";
 
 const createBookingValidate = () => {
     return [
         body("serviceType")
             .notEmpty().withMessage("Service Type is required")
             .isIn(AvailableServices).withMessage("Invalid Service Type"),
-        body("location")
-            .trim().notEmpty().withMessage("Location is required"),
+        body("address")
+            .trim().notEmpty().withMessage("address is required"),
         body("serviceDate")
             .notEmpty().withMessage("Service Date is required")
             .isISO8601().withMessage("Service Date must be a valid date")
