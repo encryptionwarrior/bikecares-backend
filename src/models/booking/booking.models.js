@@ -52,7 +52,7 @@ const bookingSchema = new mongoose.Schema({
     enum: AvailableBookingStatus,
     default: bookingStatusEnum.PENDING,
     required: true
-   }
+   },
   },
 {
   timestamps: true,

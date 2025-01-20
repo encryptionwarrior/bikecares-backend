@@ -22,10 +22,9 @@ const findNearbyMechanics = async(latitude, longitude, radiusInKm) => {
                 },
                 $maxDistance: radiusInMeter,
             },
+            
         },
     });
-
-    console.log("here check nearby mechanics", nearbyMechanics)
 
     return  nearbyMechanics
 }
@@ -86,12 +85,21 @@ const findNearbyMechanics = async(latitude, longitude, radiusInKm) => {
     
     const nearbyPartners = await findNearbyMechanics(latitude, longitude, 10);
 
-    nearbyPartners.forEach((partner) => {
+    nearbyPartners.forEach(async(partner) => {
       // Use the partner's socket ID to emit the booking details
     //   io.to(partner.socketId).emit("newBooking", {
     //     message: "New booking in your area!",
     //     bookingDetails,
     //   });
+    const alreadyBookingExist = partner?.bookingrequest?.find((item) => item.bookingId.toString() === booking?._id);
+
+    if(!alreadyBookingExist) {
+        partner.bookingrequest.push({
+            bookingId: booking?._id
+        })
+    }
+
+    await partner.save({ validateBeforeSave: true });
 
     emitSocketEvent(
         req,
@@ -103,7 +111,6 @@ const findNearbyMechanics = async(latitude, longitude, radiusInKm) => {
 
     });
 
-    console.log("here is booking info", nearbyPartners)
 
     return res.status(201).json(new ApiResponse(200, {user: booking, nearbyPartners: nearbyPartners}, "Your booking has been confirmed successfully"))
 });

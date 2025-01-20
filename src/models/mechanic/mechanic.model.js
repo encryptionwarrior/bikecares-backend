@@ -54,6 +54,15 @@ const mechanicSchema = new Schema({
          localPath: "",
      }
   },
+  bookingrequest: {
+    type: [{
+      bookingId: {
+        type: Schema.Types.ObjectId,
+        ref: "Booking",
+      }}
+    ],
+    default: [],
+  },
   verificationOtp: { type: String },
   verificationOtpExpiry: { type: Date },
   isParterVerified: { type: Boolean, default: false}
