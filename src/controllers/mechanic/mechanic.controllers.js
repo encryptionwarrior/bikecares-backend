@@ -1,3 +1,5 @@
+import { bookingStatusEnum } from "../../constants.js";
+import { Booking } from "../../models/booking/booking.models.js";
 import { Mechanic } from "../../models/mechanic/mechanic.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
@@ -65,7 +67,98 @@ const verifyMechanicPhone  = asyncHandler(async(req, res) => {
    .status(200).json(new ApiResponse( 200, mechanic, "phone number verified successfully"));
 })
 
+const getAllNearbyBookings = asyncHandler(async(req, res) => {
+
+    // const mechanic = await Mechanic.findOne({ user: req.user._id });
+
+    // if (!mechanic) {
+    //   throw new ApiError(404, "Mechanic not found");
+    // }
+
+
+    // const mechanicLocation = mechanic.location;
+
+    // // Aggregate bookings and calculate distances
+    // const bookingsWithDistance = await Booking.aggregate([
+    //   {
+    //     $geoNear: {
+    //       near: {
+    //         type: "Point",
+    //         coordinates: mechanicLocation.coordinates, // Mechanic's coordinates
+    //       },
+    //       distanceField: "distance", // Field to store the calculated distance
+    //       spherical: true, // Use spherical geometry
+    //     },
+    //   },
+    //   {
+    //     $match: { status: bookingStatusEnum.PENDING }, // Filter pending bookings
+    //   },
+    //   {
+    //     $project: {
+    //       _id: 1,
+    //       user: 1,
+    //       serviceType: 1,
+    //       address: 1,
+    //       location: 1,
+    //       serviceDate: 1,
+    //       serviceTime: 1,
+    //       distance: 1, // Include calculated distance
+    //     },
+    //   },
+    // ]);
+
+    const mechanic = await Mechanic.findOne({ user: req.user._id }).populate({
+        path: "bookingrequest.bookingId",
+        model: "Booking",
+      });
+  
+       if (!mechanic) {
+      throw new ApiError(404, "Mechanic not found");
+    }
+
+  
+      const mechanicLocation = mechanic.location.coordinates;
+  
+      // Filter bookings with status PENDING
+      const pendingBookingIds = mechanic.bookingrequest
+        .filter((request) => request.status === bookingStatusEnum.PENDING)
+        .map((request) => request.bookingId._id); // Extract booking IDs
+  
+      if (pendingBookingIds.length === 0) {
+        throw new ApiError(404, " booking request has no pending bookings");
+      }
+  
+      // Use $geoNear to calculate distance for these bookings
+      const bookingsWithDistance = await Booking.aggregate([
+        {
+          $geoNear: {
+            near: {
+              type: "Point",
+              coordinates: mechanicLocation, // Mechanic's coordinates
+            },
+            distanceField: "distance", // Field to store calculated distance
+            spherical: true, // Use spherical geometry
+            query: { _id: { $in: pendingBookingIds } }, // Filter bookings by ID
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            serviceType: 1,
+            address: 1,
+            location: 1,
+            serviceDate: 1,
+            serviceTime: 1,
+            distance: 1, // Include calculated distance
+          },
+        },
+      ]);
+
+    return res.status(200).json(new ApiResponse(201, bookingsWithDistance, "Nearby bookings fetched successfully"));
+})
+
 export {
     registerMechanic,
-    verifyMechanicPhone
+    verifyMechanicPhone,
+    getAllNearbyBookings
 }

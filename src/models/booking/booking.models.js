@@ -53,6 +53,10 @@ const bookingSchema = new mongoose.Schema({
     default: bookingStatusEnum.PENDING,
     required: true
    },
+   acceptedBy: {
+    type: Schema.Types.ObjectId,
+    ref: "Mechanic"
+   }
   },
 {
   timestamps: true,
