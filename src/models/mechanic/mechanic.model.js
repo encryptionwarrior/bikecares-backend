@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { AvailablePartnerTypes, partnerTypeEnum } from "../../constants.js";
+import { AvailablePartnerTypes, bookingStatusEnum, partnerTypeEnum } from "../../constants.js";
 
 const mechanicSchema = new Schema({
   user: {
@@ -59,7 +59,12 @@ const mechanicSchema = new Schema({
       bookingId: {
         type: Schema.Types.ObjectId,
         ref: "Booking",
-      }}
+      },
+      status: {
+        type: String,
+        enum: bookingStatusEnum,
+        default: bookingStatusEnum.PENDING,
+    }}
     ],
     default: [],
   },

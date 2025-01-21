@@ -4,7 +4,9 @@ export const DB_NAME = "mechanic";
 
 export const UserRolesEnum = {
     ADMIN: "ADMIN",
-    USER: "USER"
+    USER: "USER",
+    MECHANIC: "MECHANIC"    
+
 }
 
 export const AvailableUserRoles = Object.values(UserRolesEnum);

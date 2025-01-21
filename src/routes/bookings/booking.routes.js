@@ -1,9 +1,10 @@
 import {Router} from "express";
-import { verifyJWT } from "../../middlewares/auth.middleware.js";
-import { createBooking, getBookings } from "../../controllers/bookings/booking.controllers.js";
+import { verifyJWT, verifyPermission } from "../../middlewares/auth.middleware.js";
+import { acceptBookingByPaterner, createBooking, getBookings } from "../../controllers/bookings/booking.controllers.js";
 import { createBookingValidate } from "../../validators/booking/booking.validators.js";
-import { mongoIdPathRequestBodyValidator } from "../../validators/common/mongodb.validators.js";
+import { mongoIdPathRequestBodyValidator, mongoIdPathVariableValidator } from "../../validators/common/mongodb.validators.js";
 import { validate } from "../../validators/validate.js";
+import { UserRolesEnum } from "../../constants.js";
 
 
 
@@ -11,7 +12,8 @@ const router = Router();
 
 router.use(verifyJWT);
 router.route("/").get(getBookings)
-router.route("/create").post(createBookingValidate(), validate, createBooking)
+router.route("/create").post(createBookingValidate(), validate, createBooking);
+router.route("/action/:bookingId").get(mongoIdPathVariableValidator("bookingId"), verifyPermission(UserRolesEnum.USER), validate, acceptBookingByPaterner);
 
 
 

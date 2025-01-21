@@ -1,4 +1,4 @@
-import { BookingEventEnum, ChatEventEnum, serviceTypeEnum } from "../../constants.js";
+import { BookingEventEnum, bookingStatusEnum, ChatEventEnum, serviceTypeEnum } from "../../constants.js";
 import { Booking } from "../../models/booking/booking.models.js";
 import { Mechanic } from "../../models/mechanic/mechanic.model.js";
 import { emitSocketEvent } from "../../socket/index.js";
@@ -11,7 +11,6 @@ import { bookingSuccessMailgenContent, emailVerificationMailgenContent, sendEmai
 const findNearbyMechanics = async(latitude, longitude, radiusInKm) => {
     const radiusInMeter = radiusInKm * 1000;
 
-    console.log("FindNearbyMechanic", latitude, longitude, radiusInKm, radiusInMeter);
 
     const nearbyMechanics = await Mechanic.find({
         location: {
@@ -95,7 +94,8 @@ const findNearbyMechanics = async(latitude, longitude, radiusInKm) => {
 
     if(!alreadyBookingExist) {
         partner.bookingrequest.push({
-            bookingId: booking?._id
+            bookingId: booking?._id,
+            status: bookingStatusEnum.PENDING
         })
     }
 
@@ -114,6 +114,51 @@ const findNearbyMechanics = async(latitude, longitude, radiusInKm) => {
 
     return res.status(201).json(new ApiResponse(200, {user: booking, nearbyPartners: nearbyPartners}, "Your booking has been confirmed successfully"))
 });
+
+const acceptBookingByPaterner = asyncHandler(async(req, res) => {
+    // Accept booking by partner
+    const booking = await Booking.findByIdAndUpdate(req.params.bookingId, { status: bookingStatusEnum.ACCEPTED }, { new: true })
+       .populate("garage", "name")
+       .exec();
+
+       if(!booking){
+        throw new ApiError(404, "Something went wrong while accepting booking")
+    }
+
+    // remove booking from other nearby partner
+    const nearbyPartners = await findNearbyMechanics(booking.location.coordinates[1], booking.location.coordinates[0], 10);
+
+    nearbyPartners.forEach(async(partner) => {
+        const bookingIndex = partner.bookingrequest.findIndex((item) => item.bookingId.toString() === booking?._id?.toString());
+
+        if(bookingIndex >= 0) {
+           console.log("Found booking", partner.user?.toString(), req.user._id?.toString(), partner.user !== req.user._id?.toString);
+
+           if(partner.user?.toString() === req.user._id?.toString()){
+            const bookingRequests = partner.bookingrequest?.find((item) => item.bookingId);
+            bookingRequests.status = bookingStatusEnum.ACCEPTED
+            await partner.save({ validateBeforeSave: true });
+           } else {
+            partner.bookingrequest.splice(bookingIndex, 1);
+            await partner.save({ validateBeforeSave: true });
+
+            emitSocketEvent(
+                req,
+                // participantObjectId.toString(),
+                partner?.user?.toString(),
+                BookingEventEnum?.BOOKING_ACCEPTED_EVENT,
+                booking
+              );
+           }
+
+            // if(partner.user?.toString() !== req.user._id?.toString()) {
+      
+            // }
+        }
+    })
+
+    return res.status(201).json(new ApiResponse(200, {user: booking, nearbyPartners: nearbyPartners}, "You have accepted the booking request successfully"))
+})
 
 const getBookings = asyncHandler(async (req, res) => {
     console.log("her")
@@ -161,4 +206,4 @@ const changeBookingStatus = asyncHandler(async (req, res) => {
        return res.json(new ApiResponse(200, { booking }, "Your booking status has been updated successfully"))
 })
 
-export { createBooking, getBookings, cancelBooking, changeBookingStatus, updateBooking, getBookingById };
+export { createBooking, getBookings, cancelBooking, changeBookingStatus, updateBooking, getBookingById, acceptBookingByPaterner };
