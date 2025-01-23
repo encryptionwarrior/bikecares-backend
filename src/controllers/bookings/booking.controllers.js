@@ -294,22 +294,129 @@ const updateBooking = asyncHandler(async (req, res) => {
 
 const changeBookingStatus = asyncHandler(async (req, res) => {
   // Change booking status by ID
-  const booking = await Booking.findByIdAndUpdate(
-    req.params.id,
-    { status: req.body.status },
-    { new: true }
-  )
-    .populate("garage", "name")
-    .exec();
+
+  // const mechanic = await Mechanic.updateOne(
+  //   { 
+  //     user: req.user._id,
+  //     "bookingrequest.bookingId": req.params.bookingId, // Match specific booking
+  //   },
+  //   { 
+  //     $set: { "bookingrequest.$.status": req.body.status }, // Update the status
+  //   }
+  // );
+
+  const mechanic = await Mechanic.findOne({ user: req.user._id });
+
+if (!mechanic) {
+  return res.status(404).json({ message: "Mechanic not found" });
+}
+
+// Find the specific booking in the bookingrequest array
+const bookingToUpdate = mechanic.bookingrequest.find(
+  (booking) => booking.bookingId?.toString() === req.params.bookingId
+);
+
+if (!bookingToUpdate) {
+  return res.status(404).json({ message: "Booking not found in mechanic's requests" });
+}
+
+// Update the status
+bookingToUpdate.status = req.body.status;
+
+// Save the mechanic document once
+await mechanic.save({ validateBeforeSave: true });
+
+const booking = await Booking.findByIdAndUpdate(
+  req.params.bookingId,
+  { status: req.body.status },
+  { new: true }
+)
+  .populate("garage", "name")
+  .exec();
+
+  if (!booking) {
+  throw new ApiError(404, "Something went wrong while updating booking status");
+}
+
 
   return res.json(
     new ApiResponse(
       200,
-      { booking },
+      { booking,mechanic },
       "Your booking status has been updated successfully"
     )
   );
 });
+
+const getOngoingBooking = asyncHandler(async(req, res) => {
+    const booking = await Booking.aggregate({
+      $match: {
+        user: req.user._id,
+        status: bookingStatusEnum.ONGOING,
+      },
+    });
+
+    return res.status(200).json(new ApiResponse(200, booking, "All ongoing booking fetched successfully"));
+})
+
+
+const getCompletedBookings = asyncHandler(async(req, res) => {
+    const booking = await Booking.aggregate({
+      $match: {
+        user: req.user._id,
+        status: bookingStatusEnum.COMPLETED,
+      },
+    });
+
+    return res.status(200).json(new ApiResponse(200, booking, "All ongoing booking fetched successfully"));
+})
+
+
+const getUpcomingBookings = asyncHandler(async(req, res) => {
+  const currentDateTime = new Date(); // Get the current date and time
+
+  const bookings = await Booking.aggregate([
+    {
+      $match: {
+        user: req.user._id, // Filter by the logged-in user
+        status: bookingStatusEnum.ACCEPTED, // Status must be ACCEPTED
+        serviceDate: { $gte: currentDateTime }, // Date must be in the future or today
+      },
+    },
+    {
+      $lookup: {
+        from: "mechanics", // Reference the "mechanics" collection
+        localField: "acceptedBy", // Field in Booking referencing Mechanic
+        foreignField: "_id", // Field in Mechanic used for matching
+        as: "mechanicInfo", // The field to store the joined mechanic information
+      },
+    },
+    {
+      $unwind: {
+        path: "$mechanicInfo", // Unwind the mechanic info array to simplify the structure
+        preserveNullAndEmptyArrays: true, // Optional: Include bookings with no mechanic assigned
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        serviceType: 1,
+        address: 1,
+        location: 1,
+        serviceDate: 1,
+        serviceTime: 1,
+        status: 1,
+        "mechanicInfo._id": 1, // Include specific mechanic fields
+        "mechanicInfo.first_name": 1,
+        "mechanicInfo.last_name": 1,
+        "mechanicInfo.phone_number": 1,
+        "mechanicInfo.experience": 1,
+      },
+    },
+  ]);
+
+    return res.status(200).json(new ApiResponse(200, bookings, "All ongoing booking fetched successfully"));
+})
 
 export {
   createBooking,
@@ -319,4 +426,5 @@ export {
   updateBooking,
   getBookingById,
   acceptBookingByPaterner,
+  
 };

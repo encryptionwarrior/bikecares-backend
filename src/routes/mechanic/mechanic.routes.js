@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { validate } from "../../validators/validate.js";
 import { registerMechanicValidaor } from "../../validators/mechanic/mechanic.validators.js";
-import { getAllNearbyBookings, registerMechanic, verifyMechanicPhone } from "../../controllers/mechanic/mechanic.controllers.js";
+import { mechanicgetAllBookings, mechanicgetAllPendingNearbyBookings, registerMechanic, verifyMechanicPhone } from "../../controllers/mechanic/mechanic.controllers.js";
 import { upload } from "../../middlewares/multer.middlewares.js";
 import { verifyJWT } from "../../middlewares/auth.middleware.js";
 
@@ -24,6 +24,7 @@ router.route("/register-mechanic").post(
        registerMechanic);
 
     router.route("/verify-mechanic").get(verifyJWT, registerMechanicValidaor(), verifyMechanicPhone);
-    router.route("/booking").get(getAllNearbyBookings);
+    router.route("/booking-pending").get(mechanicgetAllPendingNearbyBookings);
+    router.route("/booking").get(mechanicgetAllBookings);
 
 export default router;
