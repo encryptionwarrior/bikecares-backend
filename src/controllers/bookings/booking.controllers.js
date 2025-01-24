@@ -208,11 +208,47 @@ const acceptBookingByPaterner = asyncHandler(async (req, res) => {
 
 const getBookings = asyncHandler(async (req, res) => {
   // Fetch bookings for the current user
-  const bookings = await Booking.find({ user: req.user._id })
-    .populate("garage", "username")
-    .exec();
+  const bookings = await Booking.aggregate([
+    {
+      $match: {
+        user: req.user._id, // Filter by the logged-in user
+      },
+    },
+    {
+      $lookup: {
+        from: "mechanics", // Reference the "mechanics" collection
+        localField: "acceptedBy", // Field in Booking referencing Mechanic
+        foreignField: "_id", // Field in Mechanic used for matching
+        as: "mechanicInfo", // The field to store the joined mechanic information
+      },
+    },
+    {
+      $unwind: {
+        path: "$mechanicInfo", // Unwind the mechanic info array to simplify the structure
+        preserveNullAndEmptyArrays: true, // Optional: Include bookings with no mechanic assigned
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        serviceType: 1,
+        address: 1,
+        location: 1,
+        serviceDate: 1,
+        serviceTime: 1,
+        status: 1,
+        "mechanicInfo._id": 1, // Include specific mechanic fields
+        "mechanicInfo.first_name": 1,
+        "mechanicInfo.last_name": 1,
+        "mechanicInfo.phone_number": 1,
+        "mechanicInfo.experience": 1,
+      },
+    },
+  ]);
 
-  return res.json(new ApiResponse(200, { bookings }, "Your bookings"));
+  return res.status(200).json(
+    new ApiResponse(200, bookings, "All upcoming bookings fetched successfully")
+  );
 });
 
 const getBookingById = asyncHandler(async (req, res) => {
@@ -349,30 +385,52 @@ const booking = await Booking.findByIdAndUpdate(
 });
 
 const getOngoingBooking = asyncHandler(async(req, res) => {
-    const booking = await Booking.aggregate({
+  const bookings = await Booking.aggregate([
+    {
       $match: {
-        user: req.user._id,
-        status: bookingStatusEnum.ONGOING,
+        user: req.user._id, // Filter by the logged-in user
+        status: bookingStatusEnum.ONGOING, // Status must be ACCEPTED
       },
-    });
+    },
+    {
+      $lookup: {
+        from: "mechanics", // Reference the "mechanics" collection
+        localField: "acceptedBy", // Field in Booking referencing Mechanic
+        foreignField: "_id", // Field in Mechanic used for matching
+        as: "mechanicInfo", // The field to store the joined mechanic information
+      },
+    },
+    {
+      $unwind: {
+        path: "$mechanicInfo", // Unwind the mechanic info array to simplify the structure
+        preserveNullAndEmptyArrays: true, // Optional: Include bookings with no mechanic assigned
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        serviceType: 1,
+        address: 1,
+        location: 1,
+        serviceDate: 1,
+        serviceTime: 1,
+        status: 1,
+        "mechanicInfo._id": 1, // Include specific mechanic fields
+        "mechanicInfo.first_name": 1,
+        "mechanicInfo.last_name": 1,
+        "mechanicInfo.phone_number": 1,
+        "mechanicInfo.experience": 1,
+      },
+    },
+  ]);
 
-    return res.status(200).json(new ApiResponse(200, booking, "All ongoing booking fetched successfully"));
+  return res.status(200).json(
+    new ApiResponse(200, bookings, "All upcoming bookings fetched successfully")
+  );
 })
 
 
-const getCompletedBookings = asyncHandler(async(req, res) => {
-    const booking = await Booking.aggregate({
-      $match: {
-        user: req.user._id,
-        status: bookingStatusEnum.COMPLETED,
-      },
-    });
-
-    return res.status(200).json(new ApiResponse(200, booking, "All ongoing booking fetched successfully"));
-})
-
-
-const getUpcomingBookings = asyncHandler(async(req, res) => {
+const getUpcomingBookings = asyncHandler(async (req, res) => {
   const currentDateTime = new Date(); // Get the current date and time
 
   const bookings = await Booking.aggregate([
@@ -415,8 +473,56 @@ const getUpcomingBookings = asyncHandler(async(req, res) => {
     },
   ]);
 
-    return res.status(200).json(new ApiResponse(200, bookings, "All ongoing booking fetched successfully"));
-})
+  return res.status(200).json(
+    new ApiResponse(200, bookings, "All upcoming bookings fetched successfully")
+  );
+});
+
+const getCompletedBookings = asyncHandler(async (req, res) => {
+
+  const bookings = await Booking.aggregate([
+    {
+      $match: {
+        user: req.user._id, // Filter by the logged-in user
+        status: bookingStatusEnum.COMPLETED, // Status must be ACCEPTED
+      },
+    },
+    {
+      $lookup: {
+        from: "mechanics", // Reference the "mechanics" collection
+        localField: "acceptedBy", // Field in Booking referencing Mechanic
+        foreignField: "_id", // Field in Mechanic used for matching
+        as: "mechanicInfo", // The field to store the joined mechanic information
+      },
+    },
+    {
+      $unwind: {
+        path: "$mechanicInfo", // Unwind the mechanic info array to simplify the structure
+        preserveNullAndEmptyArrays: true, // Optional: Include bookings with no mechanic assigned
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        serviceType: 1,
+        address: 1,
+        location: 1,
+        serviceDate: 1,
+        serviceTime: 1,
+        status: 1,
+        "mechanicInfo._id": 1, // Include specific mechanic fields
+        "mechanicInfo.first_name": 1,
+        "mechanicInfo.last_name": 1,
+        "mechanicInfo.phone_number": 1,
+        "mechanicInfo.experience": 1,
+      },
+    },
+  ]);
+
+  return res.status(200).json(
+    new ApiResponse(200, bookings, "All upcoming bookings fetched successfully")
+  );
+});
 
 export {
   createBooking,
@@ -426,5 +532,7 @@ export {
   updateBooking,
   getBookingById,
   acceptBookingByPaterner,
-  
+  getUpcomingBookings,
+  getCompletedBookings,
+  getOngoingBooking
 };

@@ -234,9 +234,13 @@ const mechanicgetAllBookings = asyncHandler(async (req, res) => {
     );
 });
 
+
+
+
 export {
   registerMechanic,
   verifyMechanicPhone,
   mechanicgetAllPendingNearbyBookings,
   mechanicgetAllBookings,
+
 };
