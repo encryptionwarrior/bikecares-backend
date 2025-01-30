@@ -70,6 +70,16 @@ export const bookingStatusEnum = {
 
 export const AvailableBookingStatus = Object.values(bookingStatusEnum);
 
+export const serviceTimelineStatusEnum = {
+    REQUEST_ACCEPT_TIME: "requestAcceptedTime",
+    INSPECTION_TIME: "inspectionTime",
+    PAYMENT_TIME: "paymentTime",
+    SERVICE_START_TIME: "serviceStartTime",
+    SERVICE_COMPLETION_TIME: "serviceCompletionTime",
+}
+
+export const AvailableServiceTimelineStatuses = Object.values(serviceTimelineStatusEnum);
+
 export const partnerTypeEnum = {
     MECHANIC: "mechanic",
     GARAGEOWNER: "garageOwner",

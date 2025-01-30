@@ -25,9 +25,12 @@ const generateAccessAndRefreshToken = async (userId) => {
 }
 
 const regsiterUser = asyncHandler(async (req, res) => {
-    const { email, username, password, role } = req.body;
+    const { email, password, role } = req.body;
 
- 
+    let username;
+    if(email){
+       username = email.split('@')[0];
+    }
 
     const existedUser = await User.findOne({
         $or: [{username}, {email}]
@@ -128,10 +131,15 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Unauthorized request");
     }
 
-    try {
+ 
         const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+        console.log("check decoded token", decodedToken, "refresh token", incomingRefreshToken)
 
-        const user = await User.findOne(decodedToken?._id);
+        if(!decodedToken){
+           throw new ApiError(401, "Invalid refresh token");
+        }
+
+        const user = await User.findById(decodedToken?._id);
 
         if(!user) {
             throw new ApiError(404, "Invalid refresh token");
@@ -154,9 +162,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         return res.status(200).cookie("accessToken", accessToken, options)
        .cookie("refreshToken", newRefreshToken, options).json(new ApiResponse(200, {accessToken, refreshToken: newRefreshToken},  "Access token refreshed"));
 
-    } catch (error) {
-        throw new ApiError(401, error?.message || "Invalid refresh token");
-    }
+   
 });
 
 const verifyEmail = asyncHandler(async (req, res) => {
