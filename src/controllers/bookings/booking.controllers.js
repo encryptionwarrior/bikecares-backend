@@ -6,6 +6,7 @@ import {
 } from "../../constants.js";
 import { Booking } from "../../models/booking/booking.models.js";
 import { Mechanic } from "../../models/mechanic/mechanic.model.js";
+import { ServiceTimeline } from "../../models/serviceTimeline/serviceTimeline.models.js";
 import { emitSocketEvent } from "../../socket/index.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
@@ -154,6 +155,8 @@ const acceptBookingByPaterner = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Something went wrong while accepting booking");
   }
 
+  await ServiceTimeline.findOneAndUpdate({booking: booking._id}, {requestAcceptedTime: Date.now()})
+
   // remove booking from other nearby partner
   const nearbyPartners = await findNearbyMechanics(
     booking.location.coordinates[1],
@@ -167,13 +170,6 @@ const acceptBookingByPaterner = asyncHandler(async (req, res) => {
     );
 
     if (bookingIndex >= 0) {
-      console.log(
-        "Found booking",
-        partner.user?.toString(),
-        req.user._id?.toString(),
-        partner.user !== req.user._id?.toString
-      );
-
       if (partner.user?.toString() === req.user._id?.toString()) {
         const bookingRequests = partner.bookingrequest?.find(
           (item) => item.bookingId
@@ -200,7 +196,7 @@ const acceptBookingByPaterner = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { user: booking, nearbyPartners: nearbyPartners },
+       booking,
         "You have accepted the booking request successfully"
       )
     );

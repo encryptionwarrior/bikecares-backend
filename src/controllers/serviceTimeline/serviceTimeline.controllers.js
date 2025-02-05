@@ -146,7 +146,7 @@ const deleteIssueTimelineNotes = asyncHandler(async (req, res) => {
 
 const getServiceTimeline = asyncHandler(async (req, res) => {
   const { booking } = req.params;
-  const serviceTimeline = await ServiceTimeline.findById({booking});
+  const serviceTimeline = await ServiceTimeline.findOne({booking});
 
   if (!serviceTimeline) {
     throw new ApiError(404, "Service timeline not found");

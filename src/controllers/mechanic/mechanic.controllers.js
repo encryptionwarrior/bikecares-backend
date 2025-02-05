@@ -238,6 +238,60 @@ const mechanicgetAllBookings = asyncHandler(async (req, res) => {
     );
 });
 
+const lastServiceBooked = asyncHandler(async(req, res) => {
+  const mechanic = await Mechanic.findOne({ user: req.user._id });
+  if (!mechanic) {
+    throw new ApiError(404, "Mechanic not found");
+  }
+
+  // const lastBooking = await Booking.findOne({ acceptedBy: req.user._id }).sort({
+  //   _id: -1,
+  // });
+  
+  const lastBooking = await Booking.aggregate([
+    {
+      $match: { acceptedBy: req.user._id }, // Filter accepted bookings
+    },
+    {
+      $sort: { _id: -1 }, // Sort by _id in descending order
+    },
+    {
+      $lookup: {
+        from: "mechanics",
+        localField: "acceptedBy",
+        foreignField: "user",
+        as: "userDetails",
+      },
+    },
+    {
+      $unwind: "$userDetails",
+    },
+    {
+            $project: {
+        _id: 1,
+        user: 1,
+        serviceType: 1,
+        address: 1,
+        location: 1,
+        serviceDate: 1,
+        status: 1,
+        serviceTime: 1,
+        distance: 1, // Include calculated distance
+        first_name: "$userDetails.first_name",
+        last_name: "$userDetails.last_name",
+        phone_number: "$userDetails.phone_number",
+        avatar: "$userDetails.avatar",
+        partnerType: "$userDetails.partnerType",
+        experience: "$userDetails.experience",
+        isParterVerified: "$userDetails.isParterVerified",
+      }
+    }
+   
+  ]);
+  
+  res.status(200).json(new ApiResponse(201, lastBooking[0], "booking fetched successfully"));
+}) 
+
 
 
 
@@ -246,5 +300,6 @@ export {
   verifyMechanicPhone,
   mechanicgetAllPendingNearbyBookings,
   mechanicgetAllBookings,
+  lastServiceBooked
 
 };
