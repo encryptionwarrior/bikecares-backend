@@ -28,14 +28,17 @@ const createServiceTimeline = asyncHandler(async (req, res) => {
 
 
 const changeServiceTimeline = asyncHandler(async (req, res) => {
-    const { serviceTimelineId } = req.params;
+    const { serviceTimeline } = req.params;
     const { status } = req.body;
 
     const updatedServiceTimeline = await ServiceTimeline.findByIdAndUpdate(
-      serviceTimelineId,
-      { status: Date.now() },
+      serviceTimeline,
+      { inspectionTime: Date.now() },
       { new: true }
     );
+    // const updatedServiceTimeline = await ServiceTimeline.findById(
+    //   serviceTimeline
+    // );
 
     if (!updatedServiceTimeline) {
       throw new ApiError(401, "Something went wrong when updating service timeline");
@@ -51,6 +54,28 @@ const changeServiceTimeline = asyncHandler(async (req, res) => {
         )
       );
 });
+
+// const getIssueNotes = asyncHandler(async (req, res) => {
+//     const { serviceTimeline } = req.params;
+
+//     const updatedServiceTimeline = await ServiceTimeline.findById(
+//       serviceTimeline);
+
+//     if (!updatedServiceTimeline) {
+//       throw new ApiError(401, "Something went wrong when adding issue notes");
+//     }
+
+//     res
+//      .status(200)
+//      .json(
+//         new ApiResponse(
+//           200,
+//           updatedServiceTimeline,
+//           "Issue notes added successfully"
+//         )
+//       );
+// });
+
 
 const addIssueNotes = asyncHandler(async (req, res) => {
     const { serviceTimeline } = req.params;
