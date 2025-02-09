@@ -55,26 +55,20 @@ const changeServiceTimeline = asyncHandler(async (req, res) => {
       );
 });
 
-// const getIssueNotes = asyncHandler(async (req, res) => {
-//     const { serviceTimeline } = req.params;
+const getIssueNotes = asyncHandler(async (req, res) => {
+  const { serviceTimeline } = req.params;
 
-//     const updatedServiceTimeline = await ServiceTimeline.findById(
-//       serviceTimeline);
+  // Find the ServiceTimeline by ID and return only the issueNotes field
+  const serviceTimelineData = await ServiceTimeline.findById(serviceTimeline).select("issueNotes");
 
-//     if (!updatedServiceTimeline) {
-//       throw new ApiError(401, "Something went wrong when adding issue notes");
-//     }
+  if (!serviceTimelineData) {
+      throw new ApiError(404, `Service timeline not found: ${serviceTimeline}`);
+  }
 
-//     res
-//      .status(200)
-//      .json(
-//         new ApiResponse(
-//           200,
-//           updatedServiceTimeline,
-//           "Issue notes added successfully"
-//         )
-//       );
-// });
+  res.status(200).json(
+      new ApiResponse(200, serviceTimelineData.issueNotes, "Issue notes fetched successfully")
+  );
+});
 
 
 const addIssueNotes = asyncHandler(async (req, res) => {
@@ -112,61 +106,53 @@ const addIssueNotes = asyncHandler(async (req, res) => {
 });
 
 const updateIssueTimelineNotes = asyncHandler(async (req, res) => {
-    const { serviceTimeline } = req.params;
-    const { issueName, timeToFix, sparePart, charge, issueNoteId } = req.body;
+  const { serviceTimeline } = req.params;
+  const { issueName, timeToFix, sparePart, charge, issueNoteId } = req.body;
 
-    const updatedServiceTimeline = await ServiceTimeline.findByIdAndUpdate(
-      serviceTimeline,
+  const updatedServiceTimeline = await ServiceTimeline.findOneAndUpdate(
+      { _id: serviceTimeline, "issueNotes._id": issueNoteId }, // Query to find the specific issueNote
       {
-        $set: {
-          "issueNotes.$[note].issueName": issueName,
-          "issueNotes.$[note].timeToFix": timeToFix,
-          "issueNotes.$[note].sparePart": sparePart,
-          "issueNotes.$[note].charge": charge,
-        },
+          $set: {
+              "issueNotes.$.issueName": issueName, // Use positional operator $
+              "issueNotes.$.timeToFix": timeToFix,
+              "issueNotes.$.sparePart": sparePart,
+              "issueNotes.$.charge": charge,
+          },
       },
-      {
-        new: true,
-        arrayFilters: [{ _id: issueNoteId }],
-      }
-    );
+      { new: true }
+  );
 
-    if (!updatedServiceTimeline) {
-      throw new ApiError(401, "Something went wrong when updating service timeline") 
-    }
+  if (!updatedServiceTimeline) {
+      throw new ApiError(401, "Something went wrong when updating service timeline");
+  }
 
-    res
-     .status(200)
-     .json(
-        new ApiResponse(
-          200,
-          updatedServiceTimeline,
-          "Issue notes updated successfully"
-        )
-      );
+  res.status(200).json(
+      new ApiResponse(200, updatedServiceTimeline, "Issue notes updated successfully")
+  );
 });
 
 const deleteIssueTimelineNotes = asyncHandler(async (req, res) => {
-    const { serviceTimelineId, issueNoteId } = req.params;
-    const updatedServiceTimeline = await ServiceTimeline.findByIdAndUpdate(
-      serviceTimelineId,
-      { $pull: { issueNotes: { _id: issueNoteId } } },
-      { new: true }
-    );
+  const { serviceTimeline } = req.params;
+  const { issueNoteId } = req.query;
 
-    if (!updatedServiceTimeline) {
-  return res.status(404).json({ message: "service timeline not found" })
-    }
+  const updatedServiceTimeline = await ServiceTimeline.findOneAndUpdate(
+      { _id: serviceTimeline }, // Find the main document
+      { $pull: { issueNotes: { _id: issueNoteId } } }, // Remove the matching subdocument
+      { new: true } // Return the updated document
+  );
 
-    res
-     .status(200)
-     .json(
-        new ApiResponse(
-          200,
-          updatedServiceTimeline,
-          "Issue notes deleted successfully"
-        )
-      );
+  if (!updatedServiceTimeline) {
+      return res.status(404).json({ message: "Service timeline not found" });
+  }
+
+  if (updatedServiceTimeline.nModified === 0) {
+      return res.status(404).json({ message: "Issue note not found" });
+  }
+
+
+  res.status(200).json(
+      new ApiResponse(200, updatedServiceTimeline, "Issue notes deleted successfully")
+  );
 });
 
 const getServiceTimeline = asyncHandler(async (req, res) => {
@@ -183,6 +169,7 @@ const getServiceTimeline = asyncHandler(async (req, res) => {
 export {
     createServiceTimeline,
     changeServiceTimeline,
+    getIssueNotes,
     addIssueNotes,
     updateIssueTimelineNotes,
     deleteIssueTimelineNotes,
