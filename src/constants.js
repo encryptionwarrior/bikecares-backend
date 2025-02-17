@@ -88,6 +88,22 @@ export const partnerTypeEnum = {
 
 export const AvailablePartnerTypes = Object.values(partnerTypeEnum);
 
+export const PaymentStatusEnum = {
+    PENDING: "PENDING",
+    CANCELLED: "CANCELLED",
+    DELIVERED: "DELIVERED",
+  };
+  
+  export const AvailablePaymentStatuses = Object.values(OrderStatusEnum);
+
+  export const PaymentProviderEnum = {
+    UNKNOWN: "UNKNOWN",
+    RAZORPAY: "RAZORPAY",
+    PAYPAL: "PAYPAL",
+  };
+  
+  export const AvailablePaymentProviders = Object.values(PaymentProviderEnum);
+
 // Haversine formula for distance calculation
 export const haversineDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Earth's radius in km

@@ -68,6 +68,7 @@ const createBooking = asyncHandler(async (req, res) => {
     serviceTime,
     serviceDescription,
     user: req.user._id,
+    basicCharge: 199
   });
 
   if (serviceType === serviceTypeEnum.InGarage) {
