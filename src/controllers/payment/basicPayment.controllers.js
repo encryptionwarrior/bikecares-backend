@@ -5,6 +5,27 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { nanoid } from 'nanoid';
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { BasicPayment } from "../../models/payment/basicPayment.model.js"
+import crypto from 'crypto';
+
+const orderFullfillmentHelper = async (orderPaymentId, req) => {
+    const order = await BasicPayment.findOneAndUpdate({
+        paymentId: orderPaymentId,
+    },
+{
+    $set: {
+        isPaymentDone: true,
+    },
+}, {
+    new: true,
+});
+
+    if (!order) {
+        throw new Error('Payment not found');
+    }
+
+    return order
+
+}
 
 // key_id: "rzp_test_qjyI9BADlgxgEN",
 // key_secret: "8qpZKIcCaLHYoTIMOtbXgf5U",
@@ -78,9 +99,6 @@ const generateRazorPayOrder = asyncHandler(async (req, res) => {
 const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     
-    
-
-    console.log("check body data ++++++++++++++++++++++++++++++++++++++++++++++++++++++++", data)
 
     const body = razorpay_order_id + '|' + razorpay_payment_id;
 

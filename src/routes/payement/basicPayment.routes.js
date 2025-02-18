@@ -11,7 +11,7 @@ router.use(verifyJWT);
 
 router.route("/provider/razorpay").post(mongoIdPathRequestBodyValidator("bookingId"), validate, generateRazorPayOrder);
 
-// router.route("/provider/razorpay/verify-payment").post(verifyRazorpayPaymentValidator(), validate, verifyRazorpayPayment);
-router.route("/provider/razorpay/verify-payment").post( verifyRazorpayPayment);
+router.route("/provider/razorpay/verify-payment").post(verifyRazorpayPaymentValidator(), validate, verifyRazorpayPayment);
+
 
 export default router;
