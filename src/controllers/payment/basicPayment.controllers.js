@@ -1,12 +1,23 @@
+import Razorpay from 'razorpay';
 import { PaymentProviderEnum } from '../../constants.js';
-import Booking from '../../models/booking/booking.models.js';
+import {Booking} from '../../models/booking/booking.models.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
+import { nanoid } from 'nanoid';
+import { ApiResponse } from "../../utils/ApiResponse.js";
+import { BasicPayment } from "../../models/payment/basicPayment.model.js"
 
+// key_id: "rzp_test_qjyI9BADlgxgEN",
+// key_secret: "8qpZKIcCaLHYoTIMOtbXgf5U",
+console.log("razoepay ++++++++++++++++++++++++++", process.env.RAZORPAY_KEY_ID)
 let razorpayInstance;
-
 try {
     razorpayInstance = new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID,
-        key_secret: process.env.RAZORPAY_KEY_SECRET,
+     key_id: "rzp_test_pzoN5sXkcuL1PN",
+    //  key_id: "rzp_live_aHuY3yR7mS7lSw",
+key_secret: "nw12gZYmPQPQC0Ns5b90EZ0d",
+        // key_id: process.env.RAZORPAY_KEY_ID,
+      
+        // key_secret: process.env.RAZORPAY_KEY_SECRET,
         currency: 'INR'
     })
 } catch (error) {
@@ -27,29 +38,30 @@ const generateRazorPayOrder = asyncHandler(async (req, res) => {
         throw new Error('Booking not found');
     }
 
-    const basicCharge = booking.basicCharge;
+    // const basicCharge = booking.basicCharge;
+    const basicCharge =266;
 
     const chargeOptions = {
         amount: parseInt(basicCharge)* 100,
         currency: 'INR',
-        description: 'Basic Charge for a garage',
-        receipt: nanoId(10),
+        receipt: nanoid(10),
     };
 
     razorpayInstance.orders.create(chargeOptions, 
         async function(err, razorpayOrder) {
             if(!razorpayOrder || (err && err.error)){
-                return  res.status(err.statusCode).json(new ApiResponse(err.statusCode, null, err.reason || "Something went wrong while creating Razorpay order"));
+                console.error('Razorpay order creation error:', err);
+                return  res.status(err.statusCode).json(new ApiResponse(err.statusCode, null, err.reason || "Something went wrong while creating Razorpay order +++++++++"));
             }
 
             const unpaidOrder = await BasicPayment.create({
                   customer: req.user._id,
-                  items: orderItems,
-                  bookingBasicPrice: totalPrice ?? 0,
-                  discountedBasicPrice: totalDiscountedPrice ?? 0,
+                  items: "dsds",
+                  bookingBasicPrice: 200 ?? 0,
+                  discountedBasicPrice: 200 ?? 0,
                   paymentProvider: PaymentProviderEnum.RAZORPAY,
                   paymentId: razorpayOrder.id,
-                  coupon: userCart.coupon?._id,
+                  coupon: "678f167de80886f03ce7a39f",
             });
 
             if(unpaidOrder){
@@ -65,6 +77,10 @@ const generateRazorPayOrder = asyncHandler(async (req, res) => {
 
 const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    
+    
+
+    console.log("check body data ++++++++++++++++++++++++++++++++++++++++++++++++++++++++", data)
 
     const body = razorpay_order_id + '|' + razorpay_payment_id;
 
@@ -78,4 +94,9 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Invalid Razorpay signature');
     }
 
-})
+});
+
+export {
+    generateRazorPayOrder,
+    verifyRazorpayPayment,
+}

@@ -94,7 +94,7 @@ export const PaymentStatusEnum = {
     DELIVERED: "DELIVERED",
   };
   
-  export const AvailablePaymentStatuses = Object.values(OrderStatusEnum);
+  export const AvailablePaymentStatuses = Object.values(PaymentStatusEnum);
 
   export const PaymentProviderEnum = {
     UNKNOWN: "UNKNOWN",
