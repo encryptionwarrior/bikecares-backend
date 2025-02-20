@@ -6,6 +6,8 @@ import { ApiError } from "../../utils/ApiError.js";
 import { UserLoginType, UserRolesEnum } from "../../constants.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { emailVerificationMailgenContent, sendEmail } from "../../utils/mail.js";
+import { getLocalPath, getStaticFilePath, removeLocalFile } from "../../utils/helpers.js";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -329,9 +331,45 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
   });
 
   const getCurrentUser = asyncHandler(async (req, res) => {
+
+    const user = await User.aggregate([
+      {
+        $match: { _id: new mongoose.Types.ObjectId(req.user._id) } // Ensure _id is an ObjectId
+      },
+      {
+        $lookup: {
+          from: "mechanics", // Collection name should be the actual MongoDB collection name
+          localField: "_id",
+          foreignField: "user",
+          as: "mechanic"
+        }
+      },
+      {
+        $unwind: {
+          path: "$mechanic",
+          preserveNullAndEmptyArrays: true // Keeps users even if they have no matching mechanics
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          username: 1,
+          email: 1,
+          avatar: 1,
+          first_name: "$mechanic.first_name",
+          last_name: "$mechanic.last_name",
+          phone_number: "$mechanic.phone_number",
+          experience: "$mechanic.experience",
+          address: "$mechanic.address",
+        }
+      }
+    ]);
+
+    const userData = user.length > 0 ? user[0] : null;
+
     return res
       .status(200)
-      .json(new ApiResponse(200, req.user, "Current user fetched successfully"));
+      .json(new ApiResponse(200, userData, "Current user fetched successfully"));
   });
 
   const changeCurrentPassword = asyncHandler(async (req, res) => {
