@@ -3,11 +3,12 @@ import jwt from "jsonwebtoken";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { User } from "../../models/auth/user.models.js";
 import { ApiError } from "../../utils/ApiError.js";
-import { UserLoginType, UserRolesEnum } from "../../constants.js";
+import { BookingEventEnum, UserLoginType, UserRolesEnum } from "../../constants.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { emailVerificationMailgenContent, sendEmail } from "../../utils/mail.js";
 import { getLocalPath, getStaticFilePath, removeLocalFile } from "../../utils/helpers.js";
 import mongoose from "mongoose";
+import { emitSocketEvent } from "../../socket/index.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -366,6 +367,14 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
     ]);
 
     const userData = user.length > 0 ? user[0] : null;
+
+    emitSocketEvent(
+      req,
+      // participantObjectId.toString(),
+      req.user._id?.toString(),
+      BookingEventEnum?.CURRENT_USER,
+      userData
+    );
 
     return res
       .status(200)

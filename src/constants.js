@@ -36,6 +36,8 @@ export const ChatEventEnum = Object.freeze({
 export const AvailableSocialLogins = Object.values(UserLoginType);
 
 export const BookingEventEnum = Object.freeze({
+    UPCOMING_BOOKING_EVENT: "upcomingBooking",
+    COMPLETED_BOOKING_EVENT: "completedBooking",
     BOOKING_REQUEST_EVENT: "bookingRequest",
     BOOKING_ACCEPTED_EVENT: "bookingAccepted",
     BOOKING_REJECTED_EVENT: "bookingRejected",
@@ -43,6 +45,7 @@ export const BookingEventEnum = Object.freeze({
     BOOKING_CANCELLED_EVENT: "bookingCancelled",
     BOOKING_EXPIRED_EVENT: "bookingExpired",
     BOOKING_UPDATED_EVENT: "bookingUpdated",
+    CURRENT_USER: "CURRENT_USER",
 });
 
 export const AvailableBookingEvents = Object.values(BookingEventEnum);

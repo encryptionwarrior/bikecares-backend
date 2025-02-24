@@ -55,7 +55,8 @@ const bookingSchema = new mongoose.Schema({
    },
    acceptedBy: {
     type: Schema.Types.ObjectId,
-    ref: "Mechanic"
+    ref: "Mechanic",
+    default: null
    },
    basicCharge: {
     type: Number,

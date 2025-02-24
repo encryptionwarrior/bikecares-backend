@@ -5,6 +5,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/auth/user.models.js";
 import { ChatEventEnum, haversineDistance } from "../constants.js";
 import { saveCallLog } from "../controllers/chat/callLogs.controllers.js";
+import { mechanicSocketEvents } from "./mechanicEvents.js";
 
 
 
@@ -262,7 +263,7 @@ const initializeSocketIO = (io) => {
       // still we want to emit some socket events to the user.
       // so that the client can catch the event and show the notifications.
       socket.join(user._id.toString());
-      socket.emit(ChatEventEnum.CONNECTED_EVENT); // emit the connected event so that client is aware
+      socket.emit(ChatEventEnum.CONNECTED_EVENT, `"User connected 🗼. userId: ", ${user._id.toString()}`); // emit the connected event so that client is aware
       console.log("User connected 🗼. userId: ", user._id.toString());
 
       // Common events that needs to be mounted on the initialization
@@ -270,7 +271,7 @@ const initializeSocketIO = (io) => {
       getLiveETA(socket, io);
       mountParticipantTypingEvent(socket);
       mountParticipantStoppedTypingEvent(socket);
-
+      mechanicSocketEvents(socket, io);
       mountVideoCallEvents(socket, io);
 
       socket.on(ChatEventEnum.DISCONNECT_EVENT, () => {

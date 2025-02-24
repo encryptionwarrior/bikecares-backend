@@ -20,7 +20,6 @@ const registerMechanic = asyncHandler(async (req, res) => {
   } = req.body;
   // take image paths from multer - adhar_card, dl_card
 
-  console.log("url is being hitted or not")
 
   const adharCardUrl = getStaticFilePath(
     req,

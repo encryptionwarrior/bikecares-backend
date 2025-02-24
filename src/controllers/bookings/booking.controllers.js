@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import {
   BookingEventEnum,
   bookingStatusEnum,
@@ -16,6 +17,53 @@ import {
   emailVerificationMailgenContent,
   sendEmail,
 } from "../../utils/mail.js";
+
+export const getPendingBoookingOfNearbyMechanics = async (mechanic) => {
+  const mechanicLocation = mechanic.location.coordinates;
+
+  // Filter bookings with status PENDING
+  const pendingBookingIds = mechanic.bookingrequest
+    // .filter((request) => request.status === bookingStatusEnum.PENDING)
+    .map((request) => request?.bookingId); // Extract booking IDs
+
+  if (pendingBookingIds.length === 0) {
+    return []
+  }
+
+  // Use $geoNear to calculate distance for these bookings
+  const bookingsWithDistance = await Booking.aggregate([
+    {
+      $geoNear: {
+        near: {
+          type: "Point",
+          coordinates: mechanicLocation, // Mechanic's coordinates
+        },
+        distanceField: "distance", // Field to store calculated distance
+        spherical: true, // Use spherical geometry
+        query: { _id: { $in: pendingBookingIds } }, // Filter bookings by ID
+      },
+    },
+    {
+      $match: { status: bookingStatusEnum.PENDING },
+    },
+    {
+      $project: {
+        _id: 1,
+        serviceType: 1,
+        address: 1,
+        location: 1,
+        serviceDate: 1,
+        serviceTime: 1,
+        status: 1,
+        distance: 1, // Include calculated distance
+      },
+    },
+  ]);
+
+
+
+  return bookingsWithDistance
+}
 
 const findNearbyMechanics = async (latitude, longitude, radiusInKm) => {
   const radiusInMeter = radiusInKm * 1000;
@@ -122,12 +170,14 @@ const createBooking = asyncHandler(async (req, res) => {
 
     await partner.save({ validateBeforeSave: true });
 
+    const nearbyBookings = await getPendingBoookingOfNearbyMechanics(partner)
+
     emitSocketEvent(
       req,
       // participantObjectId.toString(),
       partner?.user?.toString(),
       BookingEventEnum?.BOOKING_REQUEST_EVENT,
-      booking
+      nearbyBookings
     );
   });
 
@@ -144,13 +194,20 @@ const createBooking = asyncHandler(async (req, res) => {
 
 const acceptBookingByPaterner = asyncHandler(async (req, res) => {
   // Accept booking by partner
+  // const booking = await Booking.findByIdAndUpdate(
+  //   req.params.bookingId,
+  //   { status: bookingStatusEnum.ACCEPTED, acceptedBy: req.user._id },
+  //   { new: true }
+  // )
+
   const booking = await Booking.findByIdAndUpdate(
     req.params.bookingId,
-    { status: bookingStatusEnum.ACCEPTED, acceptedBy: req.user._id },
-    { new: true }
-  )
-    .populate("garage", "name")
-    .exec();
+    {
+      status: bookingStatusEnum.ACCEPTED,
+      acceptedBy: new mongoose.Types.ObjectId(req.user._id), // Ensure ObjectId
+    },
+    { new: true, runValidators: true }
+  );
 
   if (!booking) {
     throw new ApiError(404, "Something went wrong while accepting booking");
@@ -181,14 +238,15 @@ const acceptBookingByPaterner = asyncHandler(async (req, res) => {
         partner.bookingrequest.splice(bookingIndex, 1);
         await partner.save({ validateBeforeSave: true });
 
-        emitSocketEvent(
-          req,
-          // participantObjectId.toString(),
-          partner?.user?.toString(),
-          BookingEventEnum?.BOOKING_ACCEPTED_EVENT,
-          booking
-        );
       }
+      const nearbyBookings = await getPendingBoookingOfNearbyMechanics(partner)
+      emitSocketEvent(
+        req,
+        // participantObjectId.toString(),
+        partner?.user?.toString(),
+        BookingEventEnum?.BOOKING_ACCEPTED_EVENT,
+        nearbyBookings
+      );
     }
   });
 
@@ -300,6 +358,14 @@ const cancelBooking = asyncHandler(async (req, res) => {
             partner.bookingrequest.splice(bookingIndex, 1);
             await partner.save({ validateBeforeSave: true });
         }
+        const nearbyBookings = await getPendingBoookingOfNearbyMechanics(partner)
+        emitSocketEvent(
+          req,
+          // participantObjectId.toString(),
+          partner?.user?.toString(),
+          BookingEventEnum?.BOOKING_ACCEPTED_EVENT,
+          nearbyBookings
+        );
  
     }
 })
@@ -481,7 +547,7 @@ const getCompletedBookings = asyncHandler(async (req, res) => {
     {
       $match: {
         user: req.user._id, // Filter by the logged-in user
-        status: bookingStatusEnum.COMPLETED, // Status must be ACCEPTED
+        status: bookingStatusEnum.ACCEPTED, // Status must be ACCEPTED
       },
     },
     {
