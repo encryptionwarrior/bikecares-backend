@@ -7,10 +7,7 @@ import { getCompletedBookingsUser, getUpcomingBookingForUser } from "./booking.c
 
 export const mechanicSocketEvents = (socket, io) => {
     socket.on("findAllNearbyRequests", async(user) => {
-            const mechanic = await Mechanic.findOne({ user: user._id }).populate({
-                path: "bookingrequest.bookingId",
-                model: "Booking",
-              });
+            const mechanic = await Mechanic.findOne({ user: user._id });
               const nearbyBooking = await getPendingBoookingOfNearbyMechanics(mechanic);
             io.to(user._id).emit( BookingEventEnum?.BOOKING_REQUEST_EVENT, nearbyBooking);
     })

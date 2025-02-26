@@ -447,6 +447,52 @@ const booking = await Booking.findByIdAndUpdate(
   );
 });
 
+
+const getMechanicOngoingBooking = asyncHandler(async(req, res) => {
+  const bookings = await Booking.aggregate([
+    {
+      $match: {
+        acceptedBy: req.user._id, // Filter by the logged-in user
+        status: bookingStatusEnum.ONGOING, // Status must be ACCEPTED
+      },
+    },
+    {
+      $lookup: {
+        from: "mechanics", // Reference the "mechanics" collection
+        localField: "acceptedBy", // Field in Booking referencing Mechanic
+        foreignField: "_id", // Field in Mechanic used for matching
+        as: "mechanicInfo", // The field to store the joined mechanic information
+      },
+    },
+    {
+      $unwind: {
+        path: "$mechanicInfo", // Unwind the mechanic info array to simplify the structure
+        preserveNullAndEmptyArrays: true, // Optional: Include bookings with no mechanic assigned
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        serviceType: 1,
+        address: 1,
+        location: 1,
+        serviceDate: 1,
+        serviceTime: 1,
+        status: 1,
+        "mechanicInfo._id": 1, // Include specific mechanic fields
+        "mechanicInfo.first_name": 1,
+        "mechanicInfo.last_name": 1,
+        "mechanicInfo.phone_number": 1,
+        "mechanicInfo.experience": 1,
+      },
+    },
+  ]);
+
+  return res.status(200).json(
+    new ApiResponse(200, bookings, "All upcoming bookings fetched successfully")
+  );
+})
+
 const getOngoingBooking = asyncHandler(async(req, res) => {
   const bookings = await Booking.aggregate([
     {
@@ -541,6 +587,155 @@ const getUpcomingBookings = asyncHandler(async (req, res) => {
   );
 });
 
+const getMechanicUpcomingBookings = asyncHandler(async (req, res) => {
+
+   const currentDateTime = new Date(); // Get the current date and time
+  
+    const bookings = await Booking.aggregate([
+      {
+        $match: {
+          acceptedBy: new mongoose.Types.ObjectId(req?.user._id),
+          serviceDate: { $gte: currentDateTime },
+        },
+      },
+      {
+        $lookup: {
+          from: "mechanics",
+          let: { acceptedBy: "$acceptedBy" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$user", "$$acceptedBy"] },
+                    { $ne: ["$$acceptedBy", null] }, // Exclude null values explicitly
+                  ],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                first_name: 1,
+                last_name: 1,
+                phone_number: 1,
+                experience: 1,
+              },
+            },
+          ],
+          as: "mechanicInfo",
+        },
+      },
+      {
+        $addFields: {
+          mechanicInfo: {
+            $cond: {
+              if: { $gt: [{ $size: "$mechanicInfo" }, 0] }, // Only assign if mechanic exists
+              then: { $arrayElemAt: ["$mechanicInfo", 0] },
+              else: null,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          serviceType: 1,
+          address: 1,
+          location: 1,
+          serviceDate: 1,
+          serviceTime: 1,
+          status: 1,
+          "mechanicInfo._id": 1,
+          "mechanicInfo.first_name": 1,
+          "mechanicInfo.last_name": 1,
+          "mechanicInfo.phone_number": 1,
+          "mechanicInfo.experience": 1,
+        },
+      },
+    ]);
+  
+
+  return res.status(200).json(
+    new ApiResponse(200, bookings, "All upcoming bookings fetched successfully")
+  );
+});
+
+const getMechanicCompletedBookings = asyncHandler(async (req, res) => {
+
+  const currentDateTime = new Date(); // Get the current date and time
+ 
+   const bookings = await Booking.aggregate([
+     {
+       $match: {
+         acceptedBy: new mongoose.Types.ObjectId(req?.user._id),
+         serviceDate: { $lte: currentDateTime },
+       },
+     },
+     {
+       $lookup: {
+         from: "mechanics",
+         let: { acceptedBy: "$acceptedBy" },
+         pipeline: [
+           {
+             $match: {
+               $expr: {
+                 $and: [
+                   { $eq: ["$user", "$$acceptedBy"] },
+                   { $ne: ["$$acceptedBy", null] }, // Exclude null values explicitly
+                 ],
+               },
+             },
+           },
+           {
+             $project: {
+               _id: 1,
+               first_name: 1,
+               last_name: 1,
+               phone_number: 1,
+               experience: 1,
+             },
+           },
+         ],
+         as: "mechanicInfo",
+       },
+     },
+     {
+       $addFields: {
+         mechanicInfo: {
+           $cond: {
+             if: { $gt: [{ $size: "$mechanicInfo" }, 0] }, // Only assign if mechanic exists
+             then: { $arrayElemAt: ["$mechanicInfo", 0] },
+             else: null,
+           },
+         },
+       },
+     },
+     {
+       $project: {
+         _id: 1,
+         serviceType: 1,
+         address: 1,
+         location: 1,
+         serviceDate: 1,
+         serviceTime: 1,
+         status: 1,
+         "mechanicInfo._id": 1,
+         "mechanicInfo.first_name": 1,
+         "mechanicInfo.last_name": 1,
+         "mechanicInfo.phone_number": 1,
+         "mechanicInfo.experience": 1,
+       },
+     },
+   ]);
+ 
+
+ return res.status(200).json(
+   new ApiResponse(200, bookings, "All upcoming bookings fetched successfully")
+ );
+});
+
+
 const getCompletedBookings = asyncHandler(async (req, res) => {
 
   const bookings = await Booking.aggregate([
@@ -597,5 +792,8 @@ export {
   acceptBookingByPaterner,
   getUpcomingBookings,
   getCompletedBookings,
-  getOngoingBooking
+  getOngoingBooking,
+  getMechanicUpcomingBookings,
+  getMechanicCompletedBookings,
+  getMechanicOngoingBooking
 };

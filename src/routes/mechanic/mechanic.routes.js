@@ -4,6 +4,7 @@ import { registerMechanicValidaor } from "../../validators/mechanic/mechanic.val
 import { lastServiceBooked, mechanicgetAllBookings, mechanicgetAllPendingNearbyBookings, registerMechanic, verifyMechanicPhone } from "../../controllers/mechanic/mechanic.controllers.js";
 import { upload } from "../../middlewares/multer.middlewares.js";
 import { verifyJWT } from "../../middlewares/auth.middleware.js";
+import { getMechanicCompletedBookings, getMechanicOngoingBooking, getMechanicUpcomingBookings } from "../../controllers/bookings/booking.controllers.js";
 
 const router = Router();
 
@@ -27,5 +28,8 @@ router.route("/register-mechanic").post(
     router.route("/booking-pending").get(mechanicgetAllPendingNearbyBookings);
     router.route("/booking").get(mechanicgetAllBookings);
     router.route("/last-booking").get(lastServiceBooked);
+    router.route("/upcoming").get(getMechanicUpcomingBookings);
+    router.route("/completed").get(getMechanicCompletedBookings);
+    router.route("/on-going").get(getMechanicOngoingBooking);
 
 export default router;
