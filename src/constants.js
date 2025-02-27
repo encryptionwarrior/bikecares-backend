@@ -37,7 +37,9 @@ export const AvailableSocialLogins = Object.values(UserLoginType);
 
 export const BookingEventEnum = Object.freeze({
     UPCOMING_BOOKING_EVENT: "upcomingBooking",
+    ONGOING_BOOKING_EVENT: "ongoingBooking",
     COMPLETED_BOOKING_EVENT: "completedBooking",
+    MECHANIC_COMPLETED_BOOKING_EVENT: "mechaniccompletedBooking",
     BOOKING_REQUEST_EVENT: "bookingRequest",
     BOOKING_ACCEPTED_EVENT: "bookingAccepted",
     BOOKING_REJECTED_EVENT: "bookingRejected",

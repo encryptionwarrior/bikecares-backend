@@ -1,11 +1,12 @@
 import mongoose from "mongoose";
-import { bookingStatusEnum } from "../../constants.js";
+import { bookingStatusEnum, UserRolesEnum } from "../../constants.js";
 import { Booking } from "../../models/booking/booking.models.js";
 import { Mechanic } from "../../models/mechanic/mechanic.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { getLocalPath, getStaticFilePath } from "../../utils/helpers.js";
+import { User } from "../../models/auth/user.models.js";
 
 const registerMechanic = asyncHandler(async (req, res) => {
   const {
@@ -62,6 +63,17 @@ const registerMechanic = asyncHandler(async (req, res) => {
   if (!mechanic) {
     throw new ApiError(404, "Something went wrong while registering mechanic");
   }
+
+  
+      const user = await User.findByIdAndUpdate(req.user._id);
+  
+      if(!user){
+          throw new ApiError(404, "User not found");
+      }
+
+  
+      user.role = UserRolesEnum.MECHANIC; //
+      await user.save({validateBeforeSave: false});
 
   return res
     .status(200)
