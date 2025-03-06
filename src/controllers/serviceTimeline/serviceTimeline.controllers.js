@@ -1,4 +1,6 @@
+import { BookingEventEnum, serviceTimelineEventsEnum } from "../../constants.js";
 import { ServiceTimeline } from "../../models/serviceTimeline/serviceTimeline.models.js";
+import { emitSocketEvent } from "../../socket/index.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
@@ -33,7 +35,7 @@ const changeServiceTimeline = asyncHandler(async (req, res) => {
 
     const updatedServiceTimeline = await ServiceTimeline.findByIdAndUpdate(
       serviceTimeline,
-      { inspectionTime: Date.now() },
+      { [status]: Date.now() },
       { new: true }
     );
     // const updatedServiceTimeline = await ServiceTimeline.findById(
@@ -43,6 +45,14 @@ const changeServiceTimeline = asyncHandler(async (req, res) => {
     if (!updatedServiceTimeline) {
       throw new ApiError(401, "Something went wrong when updating service timeline");
     }
+
+     emitSocketEvent(
+            req,
+            // participantObjectId.toString(),
+            updatedServiceTimeline?.user?.toString(),
+            serviceTimelineEventsEnum.UPDATE_TIMELINE,
+            updatedServiceTimeline
+          );
 
     res
      .status(200)

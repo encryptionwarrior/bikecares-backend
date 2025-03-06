@@ -13,7 +13,7 @@ const router = Router();
 router.use(verifyJWT);
 router.route("/").get(getBookings)
 router.route("/create").post(createBookingValidate(), validate, createBooking);
-router.route("/action/:bookingId").get(mongoIdPathVariableValidator("bookingId"), verifyPermission(UserRolesEnum.USER), validate, acceptBookingByPaterner).delete(mongoIdPathVariableValidator("bookingId"), verifyPermission(UserRolesEnum.USER), validate, cancelBooking).put(mongoIdPathVariableValidator("bookingId"), validate, changeBookingStatus);
+router.route("/action/:bookingId").get(mongoIdPathVariableValidator("bookingId"), verifyPermission([UserRolesEnum.MECHANIC]), validate, acceptBookingByPaterner).delete(mongoIdPathVariableValidator("bookingId"), verifyPermission(UserRolesEnum.USER), validate, cancelBooking).put(mongoIdPathVariableValidator("bookingId"), verifyPermission(UserRolesEnum.MECHANIC), validate, changeBookingStatus);
 router.route("/upcoming").get(getUpcomingBookings);
 router.route("/completed").get(getCompletedBookings);
 router.route("/on-going").get(getOngoingBooking);

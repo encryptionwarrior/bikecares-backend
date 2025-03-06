@@ -83,6 +83,10 @@ export const serviceTimelineStatusEnum = {
     SERVICE_COMPLETION_TIME: "serviceCompletionTime",
 }
 
+export const serviceTimelineEventsEnum = {
+    UPDATE_TIMELINE: "UPDATETIMELINE",
+}
+
 export const AvailableServiceTimelineStatuses = Object.values(serviceTimelineStatusEnum);
 
 export const partnerTypeEnum = {

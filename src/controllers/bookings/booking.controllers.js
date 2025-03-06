@@ -181,6 +181,16 @@ const createBooking = asyncHandler(async (req, res) => {
     );
   });
 
+
+  const serviceTimeline = await ServiceTimeline.create({
+    booking: booking?._id,
+    user: req.user._id
+  });
+
+  if (!serviceTimeline) {
+    throw new Error("Something went wrong when create service timeline");
+  }
+
   return res
     .status(201)
     .json(
@@ -213,7 +223,8 @@ const acceptBookingByPaterner = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Something went wrong while accepting booking");
   }
 
-  await ServiceTimeline.findOneAndUpdate({booking: booking._id}, {requestAcceptedTime: Date.now()})
+  await ServiceTimeline.findOneAndUpdate({booking: booking._id}, {requestAcceptedTime: Date.now(), mechanic: new mongoose.Types.ObjectId(req.user._id)}, {new: true, runValidators: true});
+
 
   // remove booking from other nearby partner
   const nearbyPartners = await findNearbyMechanics(

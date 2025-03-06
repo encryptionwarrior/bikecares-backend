@@ -22,7 +22,8 @@ const ServiceTimelineSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
-  mechanic: { type: mongoose.Schema.Types.ObjectId, ref: "Mechanic" },
+  mechanic: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   issueNotes: {
     type: [
       {
