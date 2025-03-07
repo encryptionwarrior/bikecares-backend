@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { BookingEventEnum, serviceTimelineEventsEnum } from "../../constants.js";
 import { ServiceTimeline } from "../../models/serviceTimeline/serviceTimeline.models.js";
 import { emitSocketEvent } from "../../socket/index.js";
@@ -104,6 +105,14 @@ const addIssueNotes = asyncHandler(async (req, res) => {
       throw new ApiError(401, "Something went wrong when adding issue notes");
     }
 
+    emitSocketEvent(
+      req,
+      // participantObjectId.toString(),
+      updatedServiceTimeline?.user?.toString(),
+      serviceTimelineEventsEnum.ADD_ISSUE_NOTES,
+      updatedServiceTimeline
+    );
+
     res
      .status(200)
      .json(
@@ -136,6 +145,14 @@ const updateIssueTimelineNotes = asyncHandler(async (req, res) => {
       throw new ApiError(401, "Something went wrong when updating service timeline");
   }
 
+  emitSocketEvent(
+    req,
+    // participantObjectId.toString(),
+    updatedServiceTimeline?.user?.toString(),
+    serviceTimelineEventsEnum.ADD_ISSUE_NOTES,
+    updatedServiceTimeline
+  );
+
   res.status(200).json(
       new ApiResponse(200, updatedServiceTimeline, "Issue notes updated successfully")
   );
@@ -145,25 +162,43 @@ const deleteIssueTimelineNotes = asyncHandler(async (req, res) => {
   const { serviceTimeline } = req.params;
   const { issueNoteId } = req.query;
 
+  // Ensure issueNoteId is an ObjectId if required
+  if (!mongoose.Types.ObjectId.isValid(serviceTimeline) || !mongoose.Types.ObjectId.isValid(issueNoteId)) {
+    return res.status(400).json({ message: "Invalid IDs provided" });
+  }
+
   const updatedServiceTimeline = await ServiceTimeline.findOneAndUpdate(
-      { _id: serviceTimeline }, // Find the main document
-      { $pull: { issueNotes: { _id: issueNoteId } } }, // Remove the matching subdocument
-      { new: true } // Return the updated document
+    { _id: serviceTimeline },
+    { $pull: { issueNotes: { _id: issueNoteId } } },
+    { new: true }
   );
 
   if (!updatedServiceTimeline) {
-      return res.status(404).json({ message: "Service timeline not found" });
+    return res.status(404).json({ message: "Service timeline not found" });
   }
 
-  if (updatedServiceTimeline.nModified === 0) {
-      return res.status(404).json({ message: "Issue note not found" });
+  // Check if the issueNote was actually removed
+  const noteExists = updatedServiceTimeline.issueNotes.some(
+    (note) => note._id.toString() === issueNoteId
+  );
+
+  if (noteExists) {
+    return res.status(404).json({ message: "Issue note not found" });
   }
 
+  emitSocketEvent(
+    req,
+    // participantObjectId.toString(),
+    updatedServiceTimeline?.user?.toString(),
+    serviceTimelineEventsEnum.ADD_ISSUE_NOTES,
+    updatedServiceTimeline
+  );
 
   res.status(200).json(
-      new ApiResponse(200, updatedServiceTimeline, "Issue notes deleted successfully")
+    new ApiResponse(200, updatedServiceTimeline, "Issue note deleted successfully")
   );
 });
+
 
 const getServiceTimeline = asyncHandler(async (req, res) => {
   const { booking } = req.params;

@@ -85,6 +85,7 @@ export const serviceTimelineStatusEnum = {
 
 export const serviceTimelineEventsEnum = {
     UPDATE_TIMELINE: "UPDATETIMELINE",
+    ADD_ISSUE_NOTES: "ADDISSUENOTES",
 }
 
 export const AvailableServiceTimelineStatuses = Object.values(serviceTimelineStatusEnum);
